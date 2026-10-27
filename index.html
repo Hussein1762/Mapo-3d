@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#071b2b">
+<title>Mapo — خريطة العراق ثلاثية الأبعاد</title>
+<link href="https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.css" rel="stylesheet">
+<style>
+:root{--bg:#071b2b;--panel:rgba(7,25,42,.96);--line:#245064;--cyan:#22c5d6;--blue:#258cf4;--muted:#a8c0cf;--gold:#e8bd58}
+*{box-sizing:border-box}
+html,body,#map{width:100%;height:100%;margin:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Tahoma,Arial,sans-serif;background:#dce8ef;color:#fff;overflow:hidden}
+#map{position:absolute;inset:0}
+.top{position:absolute;z-index:5;top:calc(env(safe-area-inset-top,0px) + 12px);left:14px;right:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;pointer-events:none}
+.brand,.quick{pointer-events:auto;background:var(--panel);border:1px solid #2a5367;border-radius:22px;box-shadow:0 8px 26px #00121f35}
+.brand{padding:12px 16px;display:flex;align-items:center;gap:12px;min-width:0}
+.logo{width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,var(--cyan),var(--blue));display:grid;place-items:center;font-size:26px;font-weight:900}
+.brand strong{font-size:20px}.brand small{display:block;color:var(--muted);font-size:12px;margin-top:3px}
+.quick{display:flex;padding:5px;gap:5px}.quick button{border:0;background:transparent;color:white;font-size:21px;width:42px;height:42px;border-radius:14px}
+.search{position:absolute;z-index:5;top:calc(env(safe-area-inset-top,0px) + 82px);left:14px;right:14px;display:flex;gap:7px;padding:8px;background:var(--panel);border:1px solid #2a5367;border-radius:19px;box-shadow:0 8px 26px #00121f35}
+.search input{min-width:0;flex:1;border:0;outline:0;background:#ffffff0c;color:#fff;border-radius:12px;padding:12px;font-size:15px}
+button{cursor:pointer}.primary{border:0;border-radius:13px;padding:12px 17px;background:linear-gradient(135deg,var(--cyan),var(--blue));color:#041725;font-weight:800;font-size:15px}
+.status{position:absolute;z-index:5;top:calc(env(safe-area-inset-top,0px) + 145px);left:14px;right:14px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 13px;font-size:12px;color:#d9edf7;line-height:1.5}
+
+.panelhead strong{font-size:16px}.panelhead span{color:var(--muted);font-size:11px}
+.panelhead button{border:1px solid var(--line);background:#ffffff10;color:#fff;border-radius:10px;padding:6px 10px;font-size:12px}.favorite-list{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0}.favorite-list button{border:1px solid #258cf4;background:#258cf418;color:#fff;border-radius:12px;padding:8px 10px}.mapo-context{min-width:220px;color:#10202d;font-family:inherit}.mapo-context strong{display:block;margin-bottom:7px}.mapo-context button{display:block;width:100%;border:0;border-radius:9px;padding:9px;margin:5px 0;background:#0b7895;color:white;font-size:14px}.mapo-context button.fav{background:#258cf4}.mapo-context small{color:#526371}.panelhead button{border:1px solid var(--line);background:#ffffff10;color:#fff;border-radius:10px;padding:6px 10px;font-size:12px}.favorite-list{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0}.favorite-list button{border:1px solid #258cf4;background:#258cf420;color:#fff;border-radius:12px;padding:8px 10px}.mapo-context{min-width:220px;color:#10202d;font-family:inherit}.mapo-context strong{display:block;margin-bottom:7px}.mapo-context button{display:block;width:100%;border:0;border-radius:9px;padding:9px;margin:5px 0;background:#0b7895;color:white;font-size:14px}.mapo-context button.fav{background:#245b9b}.mapo-context small{color:#526371}.toggles{display:flex;gap:12px;flex-wrap:wrap;margin:10px 0 13px;color:#d6e7ef;font-size:13px}.toggles label{display:flex;align-items:center;gap:6px}.toggles input{accent-color:var(--cyan);width:17px;height:17px}
+.opacity{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px;margin-bottom:13px}.opacity input{flex:1;min-width:40px;accent-color:var(--cyan)}
+.places{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin-bottom:14px}.places button,.landmarks button,.route-buttons button{border:1px solid var(--line);background:#ffffff09;color:white;border-radius:12px;padding:10px 5px;font-size:12px;min-width:0}
+.section-title{font-size:13px;color:#c8e8f4;font-weight:800;margin:13px 0 8px}
+.landmarks{display:flex;gap:7px;overflow-x:auto;padding-bottom:7px;scrollbar-width:thin}.landmarks button{white-space:nowrap;flex-shrink:0;border-color:#167f98}
+.route-tools{margin-top:12px;padding:12px;border:1px solid #27c2d155;border-radius:15px;background:#ffffff06}
+.route-title{font-size:14px;font-weight:800;margin-bottom:9px;color:#d8f6ff}
+.route-buttons{display:flex;gap:6px;flex-wrap:wrap}.route-buttons button{flex:1;min-width:110px}.route-buttons button.active{background:linear-gradient(135deg,var(--cyan),var(--blue));color:#041725}
+.route-info{font-size:12px;line-height:1.7;color:var(--muted);margin-top:9px}
+.note{font-size:11px;color:#9cb5c5;line-height:1.6;margin-top:10px}
+.shrine-marker{width:36px;height:51px;position:relative;filter:drop-shadow(0 3px 4px #0009)}
+.shrine-marker .dome{position:absolute;left:6px;top:5px;width:24px;height:25px;border-radius:55% 55% 12% 12%;background:linear-gradient(90deg,#986313,#ffe9a0 38%,#d6a13a 70%,#80520e);border:1px solid #ffe9a4}
+.shrine-marker .dome:before{content:"";position:absolute;width:2px;height:8px;background:#f5d57a;left:10px;top:-8px}
+.shrine-marker .dome:after{content:"☾";position:absolute;color:#fff1b7;left:7px;top:-11px;font-size:10px}
+.shrine-marker .base{position:absolute;left:2px;top:29px;width:32px;height:17px;border:2px solid #f2d078;border-radius:3px 3px 1px 1px;background:repeating-linear-gradient(90deg,#8c641e 0 4px,#f1cf72 4px 6px)}
+.monument-marker{width:30px;height:45px;position:relative;filter:drop-shadow(0 3px 4px #0008)}
+.monument-marker .body{position:absolute;bottom:0;left:4px;width:22px;height:32px;background:linear-gradient(90deg,#117f91,#4ce0e0,#116b7a);border:1px solid #b5ffff;clip-path:polygon(50% 0,100% 18%,85% 100%,15% 100%,0 18%)}
+.monument-marker .halo{position:absolute;top:0;left:0;width:30px;height:20px;border:3px solid #4ce0e0;border-radius:50%;transform:rotate(-20deg)}
+@media(min-width:760px){.top{left:20px;right:auto;width:390px}.search{left:20px;right:auto;width:390px;top:105px}.status{left:20px;right:auto;width:390px;top:166px}}
+
+/* ===== Bottom sheet (single clean definition) ===== */
+.panel{
+ position:fixed;z-index:9999;left:12px;right:12px;bottom:8px;
+ height:58dvh;max-height:88dvh;box-sizing:border-box;
+ overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+ padding:0 14px calc(16px + env(safe-area-inset-bottom,0px));
+ background:var(--panel);border:1px solid #2a5367;border-radius:23px;
+ box-shadow:0 12px 36px #00121f4a;
+ transform:translate3d(0,var(--ty,0px),0);
+ transition:transform .28s cubic-bezier(.2,.8,.2,1);will-change:transform;
+}
+.panel.dragging{transition:none;user-select:none;-webkit-user-select:none}
+.panel.collapsed{overflow:hidden}
+.sheet-handle{position:sticky;top:0;z-index:10;background:var(--panel);touch-action:none;cursor:grab;padding-top:8px;margin:0 -14px;padding-left:14px;padding-right:14px}
+.panel.dragging .sheet-handle{cursor:grabbing}
+.panel-grip{width:58px;height:7px;border-radius:10px;background:#8aa5b5;margin:0 auto 6px}
+.panelhead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 10px;padding:4px 0 8px}
+.panelhead button{border:1px solid var(--line);background:#ffffff10;color:#fff;border-radius:10px;padding:7px 9px;font-size:12px;white-space:nowrap}
+.maplibregl-ctrl-bottom-right{bottom:calc(var(--sheet-vis,0px) + 18px)!important;transition:bottom .28s ease}
+.panel.dragging ~ .maplibregl-ctrl-bottom-right{transition:none}
+@media(min-width:760px){
+ .panel{left:20px;right:auto;width:390px;height:58vh;bottom:20px}
+ .maplibregl-ctrl-bottom-right{bottom:20px!important}
+}
+
+
+</style>
+</head>
+<body>
+<div id="map" aria-label="خريطة تفاعلية للعراق"></div>
+<header class="top">
+ <div class="brand"><div class="logo">M</div><div><strong>Mapo</strong><small>خريطة العراق التفاعلية • ثلاثية الأبعاد</small></div></div>
+ <div class="quick"><button id="home" aria-label="العراق">⌂</button><button id="locate" aria-label="موقعي الحالي">⊙</button></div>
+</header>
+<form class="search" id="searchForm"><input id="q" placeholder="ابحث عن مدينة أو مشروع أو مكان..." autocomplete="off"><button class="primary" type="submit">بحث</button></form>
+<div class="status" id="status" role="status">جارٍ تحميل الخريطة…</div>
+<section class="panel" id="panel" aria-label="التحكم بالخريطة">
+ <div class="sheet-handle" id="panelHandle"><div class="panel-grip" id="panelGrip" aria-label="اسحب اللوحة لتحت لإخفائها، وفوق لإرجاعها"></div><div class="panelhead"><strong>التحكم بالخريطة</strong><span>MAPO • BETA <button type="button" id="panelToggle" aria-expanded="true" onclick="window.mapoTogglePanel()">نزّل اللوحة ▼</button></span></div></div>
+ <div class="toggles">
+  <label><input id="buildings" type="checkbox" checked> المباني ثلاثية الأبعاد</label>
+  <label><input id="structures" type="checkbox" checked> الجسور والمعالم</label>
+  <label><input id="tilt" type="checkbox" checked> منظور ثلاثي الأبعاد</label>
+ </div>
+ <label class="opacity">وضوح المباني <input id="opacity" type="range" min="0.1" max="1" step="0.05" value="0.72"></label>
+ <div class="places"><button type="button" id="baghdad">بغداد</button><button type="button" id="basra">البصرة</button><button type="button" id="karbala">كربلاء</button><button type="button" id="najaf">النجف</button><button type="button" id="iraq">العراق</button></div>
+ <div class="section-title">الأماكن المفضلة ⭐</div><div class="favorite-list" id="favoriteList"><span class="note">اضغط مطولاً على الخريطة لإضافة مكان للمفضلة.</span></div><div class="section-title">معالم العراق ثلاثية الأبعاد</div>
+ <div class="landmarks">
+  <button data-landmark="martyr">نصب الشهيد</button><button data-landmark="liberty">نصب الحرية</button><button data-landmark="hussein">العتبة الحسينية</button><button data-landmark="abbas">العتبة العباسية</button><button data-landmark="ali">العتبة العلوية</button><button data-landmark="kadhimiya">العتبة الكاظمية</button><button data-landmark="republic">جسر الجمهورية</button><button data-landmark="ahrar">جسر الأحرار</button><button data-landmark="shuhada">جسر الشهداء</button>
+ </div>
+ <div class="route-tools">
+  <div class="route-title">الملاحة وتحديد الطريق</div>
+  <div class="route-buttons"><button type="button" id="useMyLocation">موقعي الحالي</button><button type="button" id="pickStart">📍 تحديد الانطلاق</button><button type="button" id="pickEnd">🏁 تحديد الوجهة</button><button type="button" id="makeRoute">ارسم الطريق</button><button type="button" id="clearRoute">مسح الطريق</button></div>
+  <div id="routeInfo" class="route-info">اختر نقطة الانطلاق والوجهة على الخريطة. يمكن استخدام موقعك الحالي كنقطة انطلاق.</div>
+ </div>
+ <div class="note">المباني ثلاثية الأبعاد تعتمد على بيانات مصدر الخريطة. مجسمات الجسور والمعالم هنا نماذج توضيحية أولية، وليست مسحاً هندسياً دقيقاً. حساب المسار يعتمد على خدمة خارجية ولا يتضمن ازدحاماً مرورياً مباشراً.</div>
+</section>
+<script src="https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.js"></script>
+<script>
+(()=>{
+const $=id=>document.getElementById(id);
+const status=$('status'); let map=null, mapReady=false, buildingLayer=null, routeMode=null, routeStart=null, routeEnd=null, routeBusy=false; const favoritePlaces=(()=>{try{return JSON.parse(localStorage.getItem('mapo-favorites')||'[]')}catch(e){return []}})(); 
+const structureIds=['mapo-3d-structures','mapo-3d-structures-labels','mapo-bridge-decks'];
+function setStatus(t){status.textContent=t}
+
+
+
+
+function renderFavorites(){const box=$('favoriteList');box.innerHTML='';if(!favoritePlaces.length){box.innerHTML='<span class="note">اضغط مطولاً على الخريطة لإضافة مكان للمفضلة.</span>';return}favoritePlaces.forEach(p=>{const b=document.createElement('button');b.type='button';b.textContent='⭐ '+p.name;b.onclick=()=>fly([p.lng,p.lat],15,45);box.appendChild(b)})}
+function saveFavorites(){try{localStorage.setItem('mapo-favorites',JSON.stringify(favoritePlaces))}catch(e){}renderFavorites()}
+function addFavoriteMarker(p){const el=document.createElement('div');el.style.cssText='width:27px;height:27px;border-radius:50%;background:#258cf4;border:2px solid white;box-shadow:0 2px 8px #0009;display:grid;place-items:center;color:white;font-size:15px';el.textContent='★';new maplibregl.Marker({element:el}).setLngLat([p.lng,p.lat]).setPopup(new maplibregl.Popup({offset:18}).setText('⭐ '+p.name+' — مكان محفوظ بالمفضلة')).addTo(map)}
+function showPlaceActions(lngLat){const lng=lngLat.lng,lat=lngLat.lat,name='مكان ('+lat.toFixed(4)+', '+lng.toFixed(4)+')';const el=document.createElement('div');el.className='mapo-context';const popup=new maplibregl.Popup({closeButton:true,closeOnClick:true,offset:14,maxWidth:'270px'}).setLngLat([lng,lat]).setDOMContent(el).addTo(map);el.innerHTML='<strong>📍 خيارات المكان</strong><small>'+lat.toFixed(5)+', '+lng.toFixed(5)+'</small><button class="fav" type="button">⭐ إضافة للمفضلة</button><button type="button" class="start">📍 تحديد كنقطة انطلاق</button><button type="button" class="end">🏁 تحديد كوجهة وحساب المسافة</button>';el.querySelector('.fav').onclick=()=>{if(!favoritePlaces.some(p=>Math.abs(p.lng-lng)<0.00001&&Math.abs(p.lat-lat)<0.00001)){const p={lng,lat,name};favoritePlaces.push(p);saveFavorites();addFavoriteMarker(p);el.querySelector('.fav').textContent='✓ تمت الإضافة'}else el.querySelector('.fav').textContent='✓ محفوظ مسبقاً'};el.querySelector('.start').onclick=()=>{routeStart=[lng,lat];routeMode=null;$('routeInfo').textContent='تم تحديد الانطلاق. اضغط مطولاً على مكان آخر واختر تحديد كوجهة.';popup.remove()};el.querySelector('.end').onclick=()=>{routeEnd=[lng,lat];routeMode=null;popup.remove();if(!routeStart){$('routeInfo').textContent='تم تحديد الوجهة. حدّد نقطة الانطلاق من اللوحة أو بالضغط المطوّل على الخريطة.';return}calculateRoute()}}
+
+renderFavorites();
+function renderFavorites(){const box=$('favoriteList');box.innerHTML='';if(!favoritePlaces.length){box.innerHTML='<span class="note">اضغط مطولاً على الخريطة لإضافة مكان للمفضلة.</span>';return}favoritePlaces.forEach(p=>{const b=document.createElement('button');b.type='button';b.textContent='⭐ '+p.name;b.onclick=()=>fly([p.lng,p.lat],15,45);box.appendChild(b)})}
+function saveFavorites(){try{localStorage.setItem('mapo-favorites',JSON.stringify(favoritePlaces))}catch(e){}renderFavorites()}
+function addFavoriteMarker(p){const el=document.createElement('div');el.style.cssText='width:28px;height:28px;border-radius:50%;background:#258cf4;border:2px solid white;box-shadow:0 2px 9px #0009;display:grid;place-items:center;color:white;font-size:16px';el.textContent='★';new maplibregl.Marker({element:el}).setLngLat([p.lng,p.lat]).setPopup(new maplibregl.Popup({offset:18}).setText('⭐ '+p.name+' — مكان محفوظ بالمفضلة')).addTo(map)}
+function showPlaceActions(lngLat){const lng=lngLat.lng,lat=lngLat.lat,name='مكان محفوظ ('+lat.toFixed(4)+', '+lng.toFixed(4)+')';const el=document.createElement('div');el.className='mapo-context';const popup=new maplibregl.Popup({closeButton:true,closeOnClick:true,offset:14,maxWidth:'270px'}).setLngLat([lng,lat]).setDOMContent(el).addTo(map);el.innerHTML='<strong>📍 اختر إجراءً لهذا المكان</strong><small>'+lat.toFixed(5)+', '+lng.toFixed(5)+'</small><button class="fav" type="button">⭐ إضافة إلى المفضلة</button><button type="button" class="start">📍 اجعلها نقطة الانطلاق</button><button type="button" class="end">🏁 اجعلها الوجهة وارسم الطريق</button>';el.querySelector('.fav').onclick=()=>{if(!favoritePlaces.some(p=>Math.abs(p.lng-lng)<0.00001&&Math.abs(p.lat-lat)<0.00001)){const p={lng,lat,name};favoritePlaces.push(p);saveFavorites();addFavoriteMarker(p);el.querySelector('.fav').textContent='✓ تمت الإضافة للمفضلة'}else el.querySelector('.fav').textContent='✓ هذا المكان محفوظ بالفعل'};el.querySelector('.start').onclick=()=>{routeStart=[lng,lat];routeMode=null;$('routeInfo').textContent='تم تعيين هذا المكان نقطة انطلاق. اضغط مطولاً على مكان آخر واختر «اجعلها الوجهة».';popup.remove()};el.querySelector('.end').onclick=()=>{routeEnd=[lng,lat];routeMode=null;popup.remove();if(!routeStart){fly([lng,lat],14,45);$('routeInfo').textContent='تم تحديد الوجهة. حدّد الانطلاق من اللوحة أو اضغط مطولاً على مكان واختر نقطة الانطلاق.';return}$('makeRoute').click()}}
+
+function restoreFavoriteMarkers(){favoritePlaces.forEach(addFavoriteMarker)}
+renderFavorites();
+function fly(center,zoom=13,pitch=48){if(map)map.flyTo({center,zoom,pitch,bearing:-8,duration:1100})}
+if(!window.maplibregl){setStatus('تعذّر تحميل مكتبة الخريطة. تحقق من اتصال الإنترنت.');return}
+try{
+ if(maplibregl.setRTLTextPlugin){try{maplibregl.setRTLTextPlugin('https://unpkg.com/@mapbox/mapbox-gl-rtl-text@0.3.0/dist/mapbox-gl-rtl-text.js',true)}catch(e){}}
+ map=new maplibregl.Map({container:'map',style:'https://tiles.openfreemap.org/styles/liberty',center:[43.75,33.15],zoom:5.1,pitch:48,bearing:-5,attributionControl:true});
+ map.addControl(new maplibregl.NavigationControl({showCompass:true,showZoom:true}),'bottom-right');
+ map.addControl(new maplibregl.ScaleControl({unit:'metric'}),'bottom-right');
+ map.on('load',()=>{
+  mapReady=true;
+  const layers=map.getStyle().layers||[];
+  layers.forEach(l=>{if(l.type==='symbol'&&l.layout&&l.layout['text-field'])try{map.setLayoutProperty(l.id,'text-field',['coalesce',['get','name:ar'],['get','name_ar'],['get','name'],['get','name:en']])}catch(e){}});
+  buildingLayer=layers.find(l=>l.type==='fill-extrusion'&&/building/i.test(l.id))?.id||null;
+  if(!buildingLayer){
+   try{map.addSource('mapo-openfreemap',{type:'vector',url:'https://tiles.openfreemap.org/planet'});const before=layers.find(l=>l.type==='symbol')?.id;
+    map.addLayer({id:'mapo-3d-buildings',type:'fill-extrusion',source:'mapo-openfreemap','source-layer':'building',minzoom:13,paint:{'fill-extrusion-color':'#aebbc8','fill-extrusion-height':['interpolate',['linear'],['zoom'],13,0,16,['coalesce',['get','render_height'],['get','height'],12]],'fill-extrusion-base':['coalesce',['get','render_min_height'],0],'fill-extrusion-opacity':0.72}},before);buildingLayer='mapo-3d-buildings';
+   }catch(e){console.warn('Buildings unavailable',e)}
+  }
+  const feats=[];
+  const poly=(id,name,kind,city,lon,lat,dx,dy,height,color,base=0)=>feats.push({type:'Feature',properties:{id,name,kind,city,height,color,base},geometry:{type:'Polygon',coordinates:[[[lon-dx,lat-dy],[lon+dx,lat-dy],[lon+dx,lat+dy],[lon-dx,lat+dy],[lon-dx,lat-dy]]]}});
+  // Small illustrative 3D plinths mark landmark locations; dedicated marker models add recognizable silhouettes.
+  const bridgeLines=[
+   {name:'جسر الجمهورية',c:[[44.3868,33.3360],[44.3944,33.3360]]},
+   {name:'جسر الأحرار',c:[[44.3808,33.3431],[44.3882,33.3431]]},
+   {name:'جسر الشهداء',c:[[44.3738,33.3476],[44.3810,33.3476]]},
+   {name:'جسر 14 تموز',c:[[44.3705,33.3076],[44.3770,33.3076]]}
+  ];
+  bridgeLines.forEach((b,i)=>feats.push({type:'Feature',properties:{id:'bridge-line-'+i,name:b.name,kind:'bridge-line',city:'بغداد'},geometry:{type:'LineString',coordinates:b.c}}));
+  map.addSource('mapo-structures-source',{type:'geojson',data:{type:'FeatureCollection',features:feats}});
+  map.addLayer({id:'mapo-3d-structures',type:'fill-extrusion',source:'mapo-structures-source',filter:['!=',['get','kind'],'bridge-line'],minzoom:9,paint:{'fill-extrusion-color':['get','color'],'fill-extrusion-height':['get','height'],'fill-extrusion-base':['get','base'],'fill-extrusion-opacity':.96,'fill-extrusion-vertical-gradient':true}});
+  map.addLayer({id:'mapo-bridge-decks',type:'line',source:'mapo-structures-source',filter:['==',['get','kind'],'bridge-line'],minzoom:8,paint:{'line-color':'#f59e0b','line-width':['interpolate',['linear'],['zoom'],8,3,12,7,16,12],'line-opacity':.98}});
+  map.addLayer({id:'mapo-3d-structures-labels',type:'symbol',source:'mapo-structures-source',filter:['!=',['get','kind'],'bridge-line'],minzoom:10,layout:{'text-field':['get','name'],'text-font':['Open Sans Regular'],'text-size':['interpolate',['linear'],['zoom'],10,10,14,13,17,15],'text-offset':[0,1.25],'text-anchor':'top','text-allow-overlap':false},paint:{'text-color':'#092033','text-halo-color':'#ffffff','text-halo-width':2}});
+  restoreFavoriteMarkers();
+  setStatus('الخريطة جاهزة. قرّب إلى بغداد أو المدن لعرض المباني والمعالم.');
+ });
+ let holdTimer=null,holdPoint=null,holdTriggered=false;const mapCanvas=map.getCanvasContainer();
+ mapCanvas.addEventListener('pointerdown',ev=>{if(ev.pointerType==='mouse'&&ev.button!==0)return;holdTriggered=false;holdPoint={x:ev.clientX,y:ev.clientY};holdTimer=setTimeout(()=>{if(!holdPoint)return;holdTriggered=true;const rect=mapCanvas.getBoundingClientRect();showPlaceActions(map.unproject([holdPoint.x-rect.left,holdPoint.y-rect.top]));},600)},{passive:true});
+ ['pointerup','pointercancel','pointerleave'].forEach(n=>mapCanvas.addEventListener(n,()=>{clearTimeout(holdTimer);holdPoint=null},{passive:true}));
+ mapCanvas.addEventListener('pointermove',ev=>{if(holdPoint&&Math.hypot(ev.clientX-holdPoint.x,ev.clientY-holdPoint.y)>12){clearTimeout(holdTimer);holdPoint=null}},{passive:true});
+ mapCanvas.addEventListener('contextmenu',ev=>{ev.preventDefault();const rect=mapCanvas.getBoundingClientRect();showPlaceActions(map.unproject([ev.clientX-rect.left,ev.clientY-rect.top]))});
+ map.on('click',e=>{if(holdTriggered){holdTriggered=false;return}if(!routeMode)return;const p=[e.lngLat.lng,e.lngLat.lat];if(routeMode==='start'){routeStart=p;$('routeInfo').textContent='تم تحديد الانطلاق. اضغط على الخريطة لتحديد الوجهة.';routeMode='end';$('pickStart').classList.remove('active');$('pickEnd').classList.add('active')}else{routeEnd=p;$('routeInfo').textContent='تم تحديد الوجهة. اضغط «ارسم الطريق».';routeMode=null;$('pickEnd').classList.remove('active')}});
+ $('pickStart').onclick=()=>{routeMode='start';$('pickStart').classList.add('active');$('pickEnd').classList.remove('active');setStatus('اضغط على الخريطة لتحديد نقطة الانطلاق.')};
+ $('pickEnd').onclick=()=>{routeMode='end';$('pickEnd').classList.add('active');$('pickStart').classList.remove('active');setStatus('اضغط على الخريطة لتحديد الوجهة.')};
+ $('useMyLocation').onclick=()=>{if(!navigator.geolocation){$('routeInfo').textContent='تحديد الموقع غير مدعوم في هذا المتصفح.';return}$('routeInfo').textContent='جارٍ تحديد موقعك…';navigator.geolocation.getCurrentPosition(p=>{routeStart=[p.coords.longitude,p.coords.latitude];routeMode=null;$('routeInfo').textContent='تم تحديد موقعك كنقطة انطلاق. اختر الوجهة.';fly(routeStart,14,45)},()=>{$('routeInfo').textContent='تعذّر تحديد الموقع. اسمح للمتصفح باستخدام الموقع أو حدده يدوياً.'},{enableHighAccuracy:true,timeout:10000})};
+ $('makeRoute').onclick=async()=>{if(!routeStart||!routeEnd){$('routeInfo').textContent='حدد الانطلاق والوجهة أولاً.';return}if(routeBusy)return;routeBusy=true;$('routeInfo').textContent='جارٍ حساب الطريق…';try{const url='https://router.project-osrm.org/route/v1/driving/'+routeStart.join(',')+';'+routeEnd.join(',')+'?overview=full&geometries=geojson';const res=await fetch(url);if(!res.ok)throw Error('route unavailable');const d=await res.json();if(d.code!=='Ok'||!d.routes?.length)throw Error('no route');const r=d.routes[0],geo={type:'Feature',properties:{},geometry:r.geometry};if(map.getSource('mapo-route'))map.getSource('mapo-route').setData(geo);else{map.addSource('mapo-route',{type:'geojson',data:geo});map.addLayer({id:'mapo-route-line',type:'line',source:'mapo-route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#e11d48','line-width':['interpolate',['linear'],['zoom'],5,3,12,6,16,9],'line-opacity':.96}})}const km=(r.distance/1000).toFixed(1),mins=Math.max(1,Math.round(r.duration/60)),time=mins<60?mins+' دقيقة':Math.floor(mins/60)+' ساعة و'+mins%60+' دقيقة';$('routeInfo').textContent='المسافة: '+km+' كم • الوقت التقديري بالسيارة: '+time+'. لا تتوفر بيانات ازدحام حيّة.';const pts=r.geometry.coordinates,bounds=pts.reduce((b,p)=>b.extend(p),new maplibregl.LngLatBounds(pts[0],pts[0]));map.fitBounds(bounds,{padding:{top:180,bottom:Math.min(300,window.innerHeight*.48),left:40,right:40},maxZoom:15,duration:900});setStatus('تم رسم الطريق.')}catch(e){$('routeInfo').textContent='تعذّر حساب الطريق. تأكد من الإنترنت أو جرّب لاحقاً؛ خدمة المسارات خارجية.'}finally{routeBusy=false}};
+ $('clearRoute').onclick=()=>{routeStart=null;routeEnd=null;routeMode=null;if(map.getLayer('mapo-route-line'))map.removeLayer('mapo-route-line');if(map.getSource('mapo-route'))map.removeSource('mapo-route');$('routeInfo').textContent='تم مسح الطريق. حدد نقطة الانطلاق والوجهة من جديد.';$('pickStart').classList.remove('active');$('pickEnd').classList.remove('active')};
+ $('buildings').onchange=e=>{if(buildingLayer&&map.getLayer(buildingLayer))map.setLayoutProperty(buildingLayer,'visibility',e.target.checked?'visible':'none');else if(e.target.checked)setStatus('طبقة المباني 3D غير متاحة حالياً بهذا النمط من الخريطة.')};
+ $('opacity').oninput=e=>{if(buildingLayer&&map.getLayer(buildingLayer))map.setPaintProperty(buildingLayer,'fill-extrusion-opacity',Number(e.target.value))};
+ $('structures').onchange=e=>{[...structureIds].forEach(id=>{if(map.getLayer(id))map.setLayoutProperty(id,'visibility',e.target.checked?'visible':'none')});document.querySelectorAll('.shrine-marker,.monument-marker').forEach(el=>el.style.display=e.target.checked?'':'none')};
+ $('tilt').onchange=e=>map.easeTo({pitch:e.target.checked?48:0,duration:500});
+ $('home').onclick=$('iraq').onclick=()=>fly([43.75,33.15],5.1,48);
+ $('baghdad').onclick=()=>fly([44.3661,33.3152],12,48);
+ $('basra').onclick=()=>fly([47.7804,30.5085],12,48);
+ $('karbala').onclick=()=>fly([44.0320,32.6160],14,52);
+ $('najaf').onclick=()=>fly([44.3148,31.9957],14,52);
+ $('locate').onclick=()=>{if(!navigator.geolocation){setStatus('تحديد الموقع غير مدعوم.');return}setStatus('جارٍ تحديد موقعك…');navigator.geolocation.getCurrentPosition(p=>fly([p.coords.longitude,p.coords.latitude],14,50),()=>setStatus('تعذّر تحديد موقعك؛ تحقق من إذن الموقع.'),{enableHighAccuracy:true,timeout:10000})};
+ $('searchForm').onsubmit=async e=>{e.preventDefault();const q=$('q').value.trim();if(!q)return;setStatus('جارٍ البحث…');try{const r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q='+encodeURIComponent(q+' Iraq'),{headers:{'Accept-Language':'ar'}});if(!r.ok)throw Error();const d=await r.json();if(d.length){fly([Number(d[0].lon),Number(d[0].lat)],14,45);setStatus('تم العثور على: '+(d[0].display_name||q))}else setStatus('لم يتم العثور على المكان. جرّب اسماً أوضح.')}catch(e){setStatus('تعذّر البحث حالياً؛ تحقق من الإنترنت.')}}
+ map.on('error',e=>{console.warn(e.error||e);if(!mapReady)setStatus('تعذّر تحميل بيانات الخريطة؛ تحقق من الاتصال بالإنترنت.')});
+}catch(e){console.error(e);setStatus('حدث خطأ أثناء تشغيل الخريطة. افتح الصفحة بمتصفح حديث واتصال إنترنت.')}
+})();
+
+
+/* ===== Draggable bottom sheet ===== */
+(function(){
+ const p=document.getElementById('panel'),h=document.getElementById('panelHandle'),b=document.getElementById('panelToggle');
+ if(!p||!h)return;
+ const PEEK=34, root=document.documentElement;
+ let ty=0,hidden=false,H=0,drag=null;
+ const hiddenTy=()=>Math.max(0,p.offsetHeight+parseFloat(getComputedStyle(p).bottom||0)-PEEK);
+ function apply(v,animate){
+   ty=Math.min(Math.max(v,0),hiddenTy());
+   p.style.setProperty('--ty',ty+'px');
+   root.style.setProperty('--sheet-vis',Math.max(0,p.offsetHeight-ty+parseFloat(getComputedStyle(p).bottom||0))+'px');
+ }
+ function setHidden(v){
+   hidden=v;p.classList.toggle('collapsed',v);
+   apply(v?hiddenTy():0);
+   if(b){b.textContent=v?'فتح اللوحة ▲':'نزّل اللوحة ▼';b.setAttribute('aria-expanded',String(!v))}
+ }
+ window.mapoTogglePanel=()=>setHidden(!hidden);
+ function start(y){H=hiddenTy();drag={y0:y,ty0:ty,last:y,t:performance.now(),v:0};p.classList.add('dragging')}
+ function move(y){
+   if(!drag)return;
+   const now=performance.now(),dt=Math.max(1,now-drag.t);
+   drag.v=(y-drag.last)/dt;drag.last=y;drag.t=now;
+   apply(drag.ty0+(y-drag.y0));
+ }
+ function end(){
+   if(!drag)return;
+   const d=drag;drag=null;p.classList.remove('dragging');
+   const moved=Math.abs(ty-d.ty0);
+   let hide;
+   if(Math.abs(d.v)>0.5)hide=d.v>0;           // quick flick
+   else hide=ty>H*0.4;                         // otherwise nearest position
+   if(moved<4)return;                          // a tap, not a drag
+   setHidden(hide);
+ }
+ // 1) Drag from the grip / title area (mouse + touch + pen)
+ h.addEventListener('pointerdown',e=>{
+   if(e.target.closest('button'))return;
+   if(e.pointerType==='mouse'&&e.button!==0)return;
+   try{h.setPointerCapture(e.pointerId)}catch(_){}
+   start(e.clientY);
+ });
+ h.addEventListener('pointermove',e=>{if(drag)move(e.clientY)});
+ h.addEventListener('pointerup',end);h.addEventListener('pointercancel',end);
+ // 2) Drag from inside the content: pull down when scrolled to top, or pull up while hidden
+ let tdrag=false,ty0=0,pend=false;
+ p.addEventListener('touchstart',e=>{
+   if(e.target.closest('.sheet-handle'))return;
+   ty0=e.touches[0].clientY;tdrag=false;pend=true;
+ },{passive:true});
+ p.addEventListener('touchmove',e=>{
+   if(!pend||e.target.closest('.sheet-handle'))return;
+   const y=e.touches[0].clientY,dy=y-ty0;
+   if(!tdrag){
+     const canPullDown=!hidden&&p.scrollTop<=0&&dy>8;
+     const canPullUp=hidden&&dy<-8;
+     if(!(canPullDown||canPullUp))return;
+     tdrag=true;start(y-dy);
+   }
+   e.preventDefault();move(y);
+ },{passive:false});
+ const tend=()=>{pend=false;if(tdrag){tdrag=false;end()}};
+ p.addEventListener('touchend',tend);p.addEventListener('touchcancel',tend);
+ // tapping the peeking bar while hidden brings it back
+ h.addEventListener('click',e=>{if(hidden&&!e.target.closest('button'))setHidden(false)});
+ addEventListener('resize',()=>{apply(hidden?hiddenTy():0)});
+ apply(0);
+})();
+
+
+</script>
+</body>
+</html>
