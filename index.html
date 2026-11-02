@@ -196,7 +196,7 @@ body.navigating .alertbar{top:calc(env(safe-area-inset-top,0px) + 100px)}
 .repgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:14px}
 .repgrid button{border:1px solid var(--line);background:#ffffff0c;color:#fff;border-radius:14px;padding:13px 4px;font-size:12px;display:flex;flex-direction:column;gap:6px;align-items:center}
 .repgrid button span{font-size:28px}
-body.night:not(.sat) #map canvas.maplibregl-canvas{filter:invert(1) hue-rotate(180deg) contrast(.74) brightness(1.55) saturate(1.15)}
+
 .mapo-user .navarrow{position:absolute;inset:0;display:none}
 body.navigating .mapo-user .navarrow{display:block}
 body.navigating .mapo-user .dot,body.navigating .mapo-user .cone,body.navigating .mapo-user .pulse{display:none}
@@ -1087,7 +1087,24 @@ async function fetchLimit(){if(!lastFix||Date.now()-limitAt<14000)return;limitAt
  speedLimit=v;const sg=$('limSign');sg.hidden=v==null;if(v!=null)sg.textContent=v}
 function keepAwake(){try{if(navigator.wakeLock)navigator.wakeLock.request('screen').then(l=>{wakeLock=l}).catch(()=>{})}catch(e){}}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&navigating)keepAwake()});
-function applyNight(){document.body.classList.toggle('night',$('night').checked)}
+let nightApplied=false;
+function applyNight(){const on=$('night').checked;document.body.classList.toggle('night',on);if(map&&mapReady&&base!=='satellite'&&on!==nightApplied){nightApplied=on;map.setStyle(STYLES[base],{diff:false})}}
+function nightify(){
+ if(!map||!document.body.classList.contains('night')||base==='satellite'){nightApplied=false;return}
+ nightApplied=true;const st=map.getStyle();if(!st||!st.layers)return;
+ const C={bg:'#162231',land:'#1b2a3b',green:'#1f3a38',water:'#12395a',bld:'#26374d',cas:'#0f1824',minor:'#3b4e66',major:'#6f87a3',hw:'#d29a4c',rail:'#34445a',bound:'#4b5f7a',txt:'#dbe6f3',halo:'#111b27',riv:'#2b6a9c'};
+ const P=(id,k,v)=>{try{map.setPaintProperty(id,k,v)}catch(e){}};
+ st.layers.forEach(l=>{const id=l.id,t=l.type;
+  if(id.indexOf('mapo-')===0)return;
+  if(t==='background')P(id,'background-color',C.bg);
+  else if(t==='fill'){if(l.paint&&l.paint['fill-pattern'])P(id,'fill-pattern',undefined);
+   const c=/water/i.test(id)?C.water:/park|wood|forest|grass|landcover|garden|pitch|cemetery|golf|recreation|nature|scrub|farm/i.test(id)?C.green:/building/i.test(id)?C.bld:C.land;P(id,'fill-color',c);P(id,'fill-outline-color',c)}
+  else if(t==='fill-extrusion')P(id,'fill-extrusion-color',C.bld);
+  else if(t==='line'){const c=/casing|outline/i.test(id)?C.cas:/water|river|stream|canal/i.test(id)?C.riv:/motorway|trunk/i.test(id)?C.hw:/primary|secondary/i.test(id)?C.major:/rail|transit|aeroway/i.test(id)?C.rail:/boundary|admin/i.test(id)?C.bound:/road|street|path|track|service|minor|link|tertiary|bridge|tunnel|pedestrian|footway|ferry/i.test(id)?C.minor:null;if(c)P(id,'line-color',c)}
+  else if(t==='symbol'){P(id,'text-color',C.txt);P(id,'text-halo-color',C.halo)}
+ });
+ if(map.getLayer('mapo-3d-buildings'))P('mapo-3d-buildings','fill-extrusion-color','#33465e');
+}
 function buildReportGrid(){const g=$('repGrid');REPORT_TYPES.forEach(t=>{const b=el('button');b.type='button';b.append(el('span',null,t.icon),document.createTextNode(t.label));b.onclick=()=>submitReport(t.id);g.append(b)})}
 buildReportGrid();
 $('reportBtn').onclick=()=>{$('repHint').textContent=lastFix?'يوضع البلاغ على موقعك الحالي، ويختفي تلقائياً بعد فترة. السواق الثانيين يؤكدونه أو ينفونه.':'ما حددنا موقعك بعد، فسيوضع البلاغ بوسط الخريطة. اضغط ⌖ لتحديد موقعك أولاً.';openDrawer('reportDrawer')};
@@ -1347,7 +1364,7 @@ try{
  map.addControl(new maplibregl.NavigationControl({showCompass:true,showZoom:true}),'bottom-right');
  map.addControl(new maplibregl.ScaleControl({unit:'metric'}),'bottom-right');
  map.getCanvas().addEventListener('contextmenu',e=>e.preventDefault());
- map.on('style.load',()=>{installLayers();if(userMarker&&accGeo.features.length)pushAcc()});
+ map.on('style.load',()=>{installLayers();nightify();if(userMarker&&accGeo.features.length)pushAcc()});
  map.on('load',()=>{
   mapReady=true;renderPark();loadGov();renderFavMarkers();renderProjects();renderFavList();renderReports();fetchReports();
   setStatus('الخريطة جاهزة • اضغط مطولاً على أي مكان لوضع دبوس أحمر، وقرّب إلى المدينة لعرض المباني.');
