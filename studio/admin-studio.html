@@ -1,0 +1,107 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mapo 3D Studio</title>
+<link href="https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.css" rel="stylesheet">
+<script src="https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.js"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#10141c;color:white;font-family:Arial,sans-serif}
+header{padding:16px;background:#1b2230;display:flex;justify-content:space-between;align-items:center}
+h2{margin:0;font-size:20px}
+button{background:#2878e8;color:white;border:0;border-radius:9px;padding:11px 15px;font-size:15px;margin:3px}
+#map{height:68vh;width:100%}
+.panel{padding:14px;background:#1b2230}
+input{width:100%;padding:12px;margin:7px 0;border-radius:8px;border:1px solid #555;background:#252d3b;color:white}
+#status{color:#9bc4ff;font-size:13px}
+</style>
+</head>
+<body>
+<header>
+<h2>🌍 Mapo 3D Studio</h2>
+<button onclick="world()">العالم</button>
+</header>
+<div id="map"></div>
+<div class="panel">
+<div id="status">اضغط على أي مكان في العالم لتحديد موقعه</div>
+<input id="name" placeholder="اسم المبنى أو المكان">
+<input id="height" type="number" placeholder="ارتفاع المبنى بالمتر" value="30">
+<button onclick="addBuilding()">إضافة مبنى 3D</button>
+<button onclick="addLabel()">إضافة تسمية</button>
+<button onclick="clearSelection()">إلغاء التحديد</button>
+</div>
+<script>
+const map=new maplibregl.Map({
+container:'map',
+style:'https://tiles.openfreemap.org/styles/liberty',
+center:[0,18],
+zoom:1.55,
+pitch:0
+});
+map.addControl(new maplibregl.NavigationControl());
+let selected=null;
+let buildings=[];
+map.on('click',e=>{
+selected=[e.lngLat.lng,e.lngLat.lat];
+document.getElementById('status').textContent=
+'الموقع المحدد: '+selected[1].toFixed(5)+', '+selected[0].toFixed(5);
+});
+function world(){
+map.flyTo({center:[0,18],zoom:1.55,pitch:0,bearing:0});
+}
+function clearSelection(){
+selected=null;
+document.getElementById('status').textContent='تم إلغاء تحديد الموقع';
+}
+function addBuilding(){
+if(!selected){alert('حدد موقعاً على الخريطة أولاً');return;}
+const height=Number(document.getElementById('height').value)||30;
+const name=document.getElementById('name').value||'مبنى جديد';
+const id='building-'+Date.now();
+const d=0.00035;
+const [x,y]=selected;
+const feature={
+type:'Feature',
+properties:{height:height,name:name,base_height:0},
+geometry:{type:'Polygon',coordinates:[[
+[x-d,y-d],[x+d,y-d],[x+d,y+d],[x-d,y+d],[x-d,y-d]
+]]}
+};
+if(!map.getSource('studio-buildings')){
+map.addSource('studio-buildings',{
+type:'geojson',
+data:{type:'FeatureCollection',features:buildings}
+});
+map.addLayer({
+id:'studio-3d-buildings',
+source:'studio-buildings',
+type:'fill-extrusion',
+paint:{
+'fill-extrusion-color':'#438bd9',
+'fill-extrusion-height':['get','height'],
+'fill-extrusion-base':0,
+'fill-extrusion-opacity':0.85
+}
+});
+}
+buildings.push(feature);
+map.getSource('studio-buildings').setData({
+type:'FeatureCollection',features:buildings
+});
+document.getElementById('status').textContent='تمت إضافة المبنى: '+name;
+map.flyTo({center:selected,zoom:17,pitch:60});
+}
+function addLabel(){
+if(!selected){alert('حدد موقعاً أولاً');return;}
+const name=document.getElementById('name').value||'مكان جديد';
+new maplibregl.Marker({color:'#e53935'})
+.setLngLat(selected).setPopup(new maplibregl.Popup().setText(name))
+.addTo(map).togglePopup();
+document.getElementById('status').textContent='تمت إضافة التسمية: '+name;
+}
+</script>
+</body>
+</html>
