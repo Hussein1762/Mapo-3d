@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="ar" dir="rtl"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
@@ -7,25 +8,49 @@
 <script src="https://unpkg.com/three@0.146.0/build/three.min.js"></script>
 <script src="https://unpkg.com/three@0.146.0/examples/js/loaders/GLTFLoader.js"></script>
 <style>
-*{box-sizing:border-box}html,body{height:100%;margin:0;overflow:hidden;background:#101722;color:#fff;font-family:Arial}body{display:flex;flex-direction:column}header,footer{background:#101722;padding:12px;border-color:#39485d}header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid}footer{border-top:1px solid;padding-bottom:calc(12px + env(safe-area-inset-bottom))}#mapwrap{position:relative;flex:1;min-height:150px}#map{position:absolute;inset:0}#modelCanvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.btn{background:#347ff0;color:white;border:0;border-radius:10px;padding:11px;margin:3px;font-size:14px}.alt{background:#29384c}.hint{font-size:12px;color:#bbc6d5;line-height:1.5;margin:0 0 7px}.coords{font-size:12px;color:#a9caff;margin:0 0 8px;direction:ltr;text-align:right}.row{display:flex;gap:6px;flex-wrap:wrap}.scrim{display:none;position:fixed;inset:0;background:#0009;z-index:9;align-items:flex-end}.sheet{background:#192638;border-radius:20px 20px 0 0;border:1px solid #40516a;padding:17px;width:100%;max-height:82%;overflow:auto;padding-bottom:calc(18px + env(safe-area-inset-bottom))}.sheet h3{margin:0 0 8px}.sheet p{font-size:12px;color:#bbc6d5}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.choice{background:#29394f;color:white;border:1px solid #40516a;border-radius:12px;padding:14px 8px;text-align:right}.choice b{display:block}.choice small{color:#bac6d6}.field{display:block;margin:12px 0 5px;font-size:13px;color:#cbd5e1}input{width:100%;padding:12px;border-radius:10px;border:1px solid #50617a;background:#101722;color:white;font-size:15px}.slider{display:grid;grid-template-columns:1fr 48px;gap:8px;align-items:center;margin:9px 0}.slider input{padding:0}.val{text-align:center;font-size:12px;color:#bcd0e8}.bar{display:flex;gap:8px;margin-top:12px}.bar button{flex:1}.saved{padding:10px;background:#29394f;border-radius:10px;margin:8px 0;font-size:13px}.quickgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:10px 0}.quickgrid button{min-height:48px;font-size:18px}.quickgrid .wide{grid-column:span 3}.controlgroup{background:#111c2b;border:1px solid #34465e;border-radius:14px;padding:10px;margin:10px 0}.controlgroup strong{display:block;font-size:14px;margin-bottom:8px}.controlgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.controlgrid button{background:#304158;color:white;border:1px solid #50617a;border-radius:10px;padding:12px 4px;font-size:14px}.controlgrid button.primary{background:#347ff0;border:0}.subhint{font-size:11px;color:#aebdd0;margin-top:5px}#toast{display:none;position:fixed;z-index:20;top:65px;left:50%;transform:translateX(-50%);background:#101722;border:1px solid #50617a;padding:10px;border-radius:10px;font-size:12px}
+*{box-sizing:border-box}html,body{height:100%;margin:0;overflow:hidden;background:#101722;color:#fff;font-family:Arial}body{display:flex;flex-direction:column}header,footer{background:#101722;padding:12px;border-color:#39485d}header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid}footer{border-top:1px solid;padding-bottom:calc(12px + env(safe-area-inset-bottom))}#mapwrap{position:relative;flex:1;min-height:150px}#map{position:absolute;inset:0}.btn{background:#347ff0;color:white;border:0;border-radius:10px;padding:11px;margin:3px;font-size:14px}.alt{background:#29384c}.hint{font-size:12px;color:#bbc6d5;line-height:1.5;margin:0 0 7px}.coords{font-size:12px;color:#a9caff;margin:0 0 8px;direction:ltr;text-align:right}.row{display:flex;gap:6px;flex-wrap:wrap}.scrim{display:none;position:fixed;inset:0;background:#0009;z-index:9;align-items:flex-end}.sheet{background:#192638;border-radius:20px 20px 0 0;border:1px solid #40516a;padding:17px;width:100%;max-height:82%;overflow:auto;padding-bottom:calc(18px + env(safe-area-inset-bottom))}.sheet h3{margin:0 0 8px}.sheet p{font-size:12px;color:#bbc6d5}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.choice{background:#29394f;color:white;border:1px solid #40516a;border-radius:12px;padding:14px 8px;text-align:right}.choice b{display:block}.choice small{color:#bac6d6}.field{display:block;margin:12px 0 5px;font-size:13px;color:#cbd5e1}input{width:100%;padding:12px;border-radius:10px;border:1px solid #50617a;background:#101722;color:white;font-size:15px}.slider{display:grid;grid-template-columns:1fr 48px;gap:8px;align-items:center;margin:9px 0}.slider input{padding:0}.val{text-align:center;font-size:12px;color:#bcd0e8}.bar{display:flex;gap:8px;margin-top:12px}.bar button{flex:1}.saved{padding:10px;background:#29394f;border-radius:10px;margin:8px 0;font-size:13px}.quickgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:10px 0}.quickgrid button{min-height:48px;font-size:18px}.quickgrid .wide{grid-column:span 3}.controlgroup{background:#111c2b;border:1px solid #34465e;border-radius:14px;padding:10px;margin:10px 0}.controlgroup strong{display:block;font-size:14px;margin-bottom:8px}.controlgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.controlgrid button{background:#304158;color:white;border:1px solid #50617a;border-radius:10px;padding:12px 4px;font-size:14px}.controlgrid button.primary{background:#347ff0;border:0}.subhint{font-size:11px;color:#aebdd0;margin-top:5px}#map canvas{touch-action:none}#toast{display:none;position:fixed;z-index:20;top:65px;left:50%;transform:translateX(-50%);background:#101722;border:1px solid #50617a;padding:10px;border-radius:10px;font-size:12px}
 </style></head><body>
 <header><b>🌍 Mapo 3D Studio</b><div><button class="btn alt" onclick="world()">العالم</button><button class="btn alt" onclick="tilt()">3D/2D</button></div></header>
-<div id="mapwrap"><div id="map"></div><canvas id="modelCanvas"></canvas></div>
+<div id="mapwrap"><div id="map"></div></div>
 <footer><p class="hint">حدد الموقع بنقرة أو ضغطة مطوّلة. ارفع نموذج GLB ثم انقله ودوّره واضبط حجمه قبل تثبيته.</p><div class="coords" id="coords">لم يتم تحديد موقع</div><div class="row"><button class="btn" onclick="menu()">خيارات الموقع</button><button class="btn" onclick="uploadOpen()">＋ رفع مبنى 3D</button><button class="btn alt" onclick="savedOpen()">العناصر المحفوظة</button></div></footer>
 <div id="toast"></div>
 <div class="scrim" id="menuSheet" onclick="back(event,'menuSheet')"><section class="sheet"><h3>شنو تريد تسوي بهذا المكان؟</h3><p id="placeText"></p><div class="grid"><button class="choice" onclick="uploadOpen()"><b>📦 رفع مبنى 3D</b><small>GLB / GLTF</small></button><button class="choice" onclick="labelOpen()"><b>📍 إضافة تسمية</b><small>اسم للموقع</small></button><button class="choice" onclick="favorite()"><b>⭐ حفظ الموقع</b><small>إضافة للمفضلة</small></button><button class="choice" onclick="copyCoords()"><b>🧭 نسخ الإحداثيات</b><small>نسخ الموقع</small></button></div><div class="bar"><button class="btn alt" onclick="close('menuSheet')">إغلاق</button></div></section></div>
 <div class="scrim" id="uploadSheet" onclick="back(event,'uploadSheet')"><section class="sheet"><h3>رفع نموذج المبنى</h3><p>اختر ملف GLB. هذه الصيغة تجمع المجسم والمواد غالباً بملف واحد.</p><label class="field">ملف 3D</label><input id="file" type="file" accept=".glb,.gltf"><label class="field">اسم المبنى</label><input id="name" placeholder="اسم المبنى"><div class="bar"><button class="btn" onclick="loadModel()">رفع وعرض المبنى</button><button class="btn alt" onclick="close('uploadSheet')">رجوع</button></div></section></div>
-<div class="scrim" id="editSheet" onclick="back(event,'editSheet')"><section class="sheet"><h3>تحكّم بالمبنى</h3><p>استخدم الأزرار أدناه. التغييرات تظهر مباشرة على الخريطة.</p>
-<div class="controlgroup"><strong>📍 تحريك المبنى على الخريطة</strong><div class="controlgrid"><span></span><button onclick="moveBy(0,1)">⬆️ للأعلى</button><span></span><button onclick="moveBy(-1,0)">⬅️ يسار</button><button onclick="moveBy(0,-1)">⬇️ للأسفل</button><button onclick="moveBy(1,0)">يمين ➡️</button></div><div class="subhint">كل ضغطة تحرّك المبنى مسافة قصيرة. يمكنك أيضاً اختيار «نقل لمكان آخر» ثم لمس الخريطة.</div><button class="btn alt" style="width:100%;margin:8px 0 0" onclick="moveMode()">📌 نقل لمكان آخر على الخريطة</button></div>
-<div class="controlgroup"><strong>🔄 تدوير المبنى</strong><div class="controlgrid"><button onclick="turn(-15)">↶ 15°</button><button onclick="turn(15)">↷ 15°</button><button onclick="turn(90)">90°</button></div><div class="slider"><input id="rot" type="range" min="0" max="359" value="0" oninput="rotation(this.value)"><span class="val" id="rv">0°</span></div></div>
-<div class="controlgroup"><strong>📐 حجم المبنى</strong><div class="controlgrid"><button onclick="scaleBy(-.1)">－ تصغير</button><button onclick="scaling(1);document.getElementById('scale').value=1">↺ عادي</button><button onclick="scaleBy(.1)">＋ تكبير</button></div><div class="slider"><input id="scale" type="range" min=".2" max="5" step=".1" value="1" oninput="scaling(this.value)"><span class="val" id="sv">1×</span></div></div>
-<div class="controlgroup"><strong>↕️ ارتفاع المبنى</strong><div class="controlgrid"><button onclick="elevBy(-2)">خفض 2م</button><button onclick="elevation(0);document.getElementById('elev').value=0">الأرض</button><button onclick="elevBy(2)">رفع 2م</button></div><div class="slider"><input id="elev" type="range" min="0" max="100" value="0" oninput="elevation(this.value)"><span class="val" id="ev">0م</span></div></div>
+<div class="scrim" id="editSheet" onclick="back(event,'editSheet')"><section class="sheet"><h3>تحكّم بالمبنى</h3><p>اختَر وضع التحريك أو التدوير، ثم اسحب بإصبعك مباشرة على الخريطة. المجسم مثبت بإحداثيات جغرافية ويتبع الخريطة.</p>
+<div class="controlgroup"><strong>🖐️ التحكم المباشر</strong>
+<div class="controlgrid">
+<button id="moveModeBtn" class="primary" onclick="setMode('move')">✥ تحريك</button>
+<button id="rotateModeBtn" onclick="setMode('rotate')">↻ تدوير</button>
+<button onclick="setMode('none')">إنهاء التحكم</button>
+</div>
+<div class="subhint" id="modeHelp">وضع التحريك: اسحب المبنى على الخريطة بإصبعك إلى المكان الذي تريده.</div>
+</div>
+<div class="controlgroup"><strong>📐 حجم المبنى</strong>
+<div class="controlgrid">
+<button onclick="scaleBy(-.1)">－ تصغير</button>
+<button onclick="resetScale()">↺ الحجم الأصلي</button>
+<button onclick="scaleBy(.1)">＋ تكبير</button>
+</div>
+<div class="slider"><input id="scale" type="range" min=".25" max="3" step=".05" value="1" oninput="scaling(this.value)"><span class="val" id="sv">1×</span></div>
+</div>
+<div class="controlgroup"><strong>↕️ ارتفاع المبنى عن الأرض</strong>
+<div class="slider"><input id="elev" type="range" min="0" max="30" step=".5" value="0" oninput="elevation(this.value)"><span class="val" id="ev">0م</span></div>
+<div class="subhint">اتركه على صفر حتى تلامس قاعدة المبنى سطح الأرض.</div>
+</div>
+<div class="controlgroup"><strong>🧭 اتجاه المبنى</strong>
+<div class="controlgrid">
+<button onclick="turn(-15)">↶ 15°</button>
+<button onclick="turn(15)">↷ 15°</button>
+<button onclick="turn(90)">90°</button>
+</div>
+<div class="slider"><input id="rot" type="range" min="0" max="359" value="0" oninput="rotation(this.value)"><span class="val" id="rv">0°</span></div>
+</div>
 <label class="field">اسم المبنى (اختياري)</label><input id="editName" placeholder="اكتب اسم المبنى">
 <div class="bar"><button class="btn" onclick="saveDraft()">💾 حفظ المبنى</button><button class="btn alt" onclick="cancelModel()">إلغاء</button></div><div class="bar"><button class="btn alt" onclick="close('editSheet')">إغلاق لوحة التحكم</button></div></section></div>
 <div class="scrim" id="savedSheet" onclick="back(event,'savedSheet')"><section class="sheet"><h3>العناصر المحفوظة</h3><div id="savedList"></div><button class="btn alt" onclick="close('savedSheet')">إغلاق</button></section></div>
 <div class="scrim" id="labelSheet" onclick="back(event,'labelSheet')"><section class="sheet"><h3>إضافة تسمية</h3><input id="label" placeholder="اسم المكان"><div class="bar"><button class="btn" onclick="saveLabel()">حفظ</button><button class="btn alt" onclick="close('labelSheet')">رجوع</button></div></section></div>
 <script>
-const KEY='mapo_studio_glb_v1',DB='mapo_glb_files';let items=JSON.parse(localStorage.getItem(KEY)||'[]'),selected=null,move=false,root=null,scene=null,camera=null,renderer=null,anchor=null,blobId=null,modelName='';
+const KEY='mapo_studio_glb_v1',DB='mapo_glb_files';let items=JSON.parse(localStorage.getItem(KEY)||'[]'),selected=null,move=false,root=null,scene=null,camera=null,renderer=null,anchor=null,blobId=null,modelName='',modelGroup=null,modelLayer=null,mode='move',dragState=null;
 const map=new maplibregl.Map({container:'map',style:'https://tiles.openfreemap.org/styles/liberty',center:[0,18],zoom:1.55});map.addControl(new maplibregl.NavigationControl(),'top-right');
 function msg(s){let e=document.getElementById('toast');e.textContent=s;e.style.display='block';clearTimeout(msg.t);msg.t=setTimeout(()=>e.style.display='none',2700)}
 function open(id){document.getElementById(id).style.display='flex'}function close(id){document.getElementById(id).style.display='none'}function back(e,id){if(e.target.id===id)close(id)}
@@ -38,36 +63,108 @@ function uploadOpen(){if(!selected){msg('حدد مكان المبنى أولاً
 function dbOpen(){return new Promise((res,rej)=>{let r=indexedDB.open(DB,1);r.onupgradeneeded=()=>r.result.createObjectStore('files',{keyPath:'id'});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
 async function storeFile(id,blob){let d=await dbOpen();return new Promise((res,rej)=>{let t=d.transaction('files','readwrite');t.objectStore('files').put({id,blob});t.oncomplete=res;t.onerror=()=>rej(t.error)})}
 async function readFile(id){let d=await dbOpen();return new Promise((res,rej)=>{let r=d.transaction('files').objectStore('files').get(id);r.onsuccess=()=>res(r.result?.blob);r.onerror=()=>rej(r.error)})}
-function init3d(){if(renderer)return;let c=document.getElementById('modelCanvas');renderer=new THREE.WebGLRenderer({canvas:c,alpha:true,antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(c.clientWidth,c.clientHeight,false);scene=new THREE.Scene();camera=new THREE.PerspectiveCamera(40,c.clientWidth/c.clientHeight,.1,1000);camera.position.set(0,2,7);scene.add(new THREE.HemisphereLight(0xffffff,0x667080,2));let l=new THREE.DirectionalLight(0xffffff,2);l.position.set(4,8,6);scene.add(l);window.addEventListener('resize',resize3d)}
-function resize3d(){if(!renderer)return;let c=document.getElementById('modelCanvas');renderer.setSize(c.clientWidth,c.clientHeight,false);camera.aspect=c.clientWidth/c.clientHeight;camera.updateProjectionMatrix();draw()}
-function draw(){if(renderer)renderer.render(scene,camera)}
-function positionModel(){if(!root||!anchor)return;let c=document.getElementById('modelCanvas'),p=map.project([anchor.lng,anchor.lat]);let z=Math.pow(2,(map.getZoom()-16)/3.2);root.position.set((p.x-c.clientWidth/2)/75,-(p.y-c.clientHeight/2)/75,Number(document.getElementById('elev').value)/45);let s=(root.userData.base||1)*z*Number(document.getElementById('scale').value);root.scale.setScalar(s);draw()}
-function fit(obj){let b=new THREE.Box3().setFromObject(obj),s=b.getSize(new THREE.Vector3()),c=b.getCenter(new THREE.Vector3());obj.position.sub(c);let max=Math.max(s.x,s.y,s.z)||1;obj.scale.multiplyScalar(2.6/max);obj.userData.base=obj.scale.x}
-async function loadModel(){let f=document.getElementById('file').files[0];if(!f){msg('اختَر ملف GLB');return}if(!f.name.toLowerCase().endsWith('.glb')){msg('حالياً ارفع GLB؛ دعم GLTF متعدد الملفات لاحقاً');return}modelName=document.getElementById('name').value.trim()||f.name;document.getElementById('editName').value=modelName;msg('جاري تحميل النموذج');let buf=await f.arrayBuffer();init3d();new THREE.GLTFLoader().parse(buf,'',async g=>{if(root)scene.remove(root);root=g.scene;fit(root);scene.add(root);anchor={...selected};blobId=String(Date.now())+Math.random();try{await storeFile(blobId,new Blob([buf],{type:'model/gltf-binary'}))}catch(e){msg('تعذر تخزين الملف محلياً')}document.getElementById('rot').value=0;document.getElementById('scale').value=1;document.getElementById('elev').value=0;rotation(0);scaling(1);elevation(0);positionModel();close('uploadSheet');open('editSheet');msg('تم تحميل النموذج؛ اضبطه قبل التثبيت')},e=>msg('تعذر قراءة النموذج: '+e.message))}
-function rotation(v){if(root)root.rotation.y=Number(v)*Math.PI/180;document.getElementById('rv').textContent=v+'°';draw()}
-function scaling(v){document.getElementById('sv').textContent=Number(v).toFixed(1)+'×';positionModel()}
-function elevation(v){document.getElementById('ev').textContent=v+'م';positionModel()}
+function init3d(){
+ if(scene)return;
+ scene=new THREE.Scene();
+ camera=new THREE.Camera();
+ scene.add(new THREE.HemisphereLight(0xffffff,0x6b7280,2.0));
+ const sun=new THREE.DirectionalLight(0xffffff,2.2);sun.position.set(-80,120,80);scene.add(sun);
+ modelGroup=new THREE.Group();scene.add(modelGroup);
+ modelLayer={
+  id:'mapo-3d-model-layer',type:'custom',renderingMode:'3d',
+  onAdd:function(map,gl){
+   renderer=new THREE.WebGLRenderer({canvas:map.getCanvas(),context:gl,antialias:true});
+   renderer.autoClear=false;renderer.outputColorSpace=THREE.SRGBColorSpace;
+  },
+  render:function(gl,matrix){
+   if(!renderer)return;
+   if(root&&anchor){
+    const mc=maplibregl.MercatorCoordinate.fromLngLat([anchor.lng,anchor.lat],Number(document.getElementById('elev').value));
+    const meter=mc.meterInMercatorCoordinateUnits();
+    const projection=new THREE.Matrix4().fromArray(matrix);
+    const translation=new THREE.Matrix4().makeTranslation(mc.x,mc.y,mc.z);
+    const scale=new THREE.Matrix4().makeScale(meter,-meter,meter);
+    const axis=new THREE.Matrix4().makeRotationX(Math.PI/2);
+    const bearing=new THREE.Matrix4().makeRotationZ(0);
+    camera.projectionMatrix.copy(projection).multiply(translation).multiply(scale).multiply(axis).multiply(bearing);
+    camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
+    renderer.resetState();renderer.render(scene,camera);
+   }
+  }
+ };
+ if(map.isStyleLoaded()&&!map.getLayer(modelLayer.id))map.addLayer(modelLayer);
+ else map.once('load',()=>{if(!map.getLayer(modelLayer.id))map.addLayer(modelLayer)});
+}
+function requestRender(){if(map)map.triggerRepaint()}
+function fit(obj){
+ const bounds=new THREE.Box3().setFromObject(obj);
+ const center=bounds.getCenter(new THREE.Vector3());
+ const minY=bounds.min.y;
+ obj.position.x-=center.x;obj.position.z-=center.z;obj.position.y-=minY;
+}
+function setMode(next){
+ mode=next;
+ document.getElementById('moveModeBtn').classList.toggle('primary',mode==='move');
+ document.getElementById('rotateModeBtn').classList.toggle('primary',mode==='rotate');
+ document.getElementById('modeHelp').textContent=mode==='move'?'وضع التحريك: اسحب المبنى بإصبعك على الخريطة.':mode==='rotate'?'وضع التدوير: اسحب يميناً أو يساراً على الخريطة لتدوير المبنى.':'تم إيقاف السحب. اختر تحريك أو تدوير للمتابعة.';
+}
+function positionModel(){requestRender()}
+async function loadModel(){let f=document.getElementById('file').files[0];if(!f){msg('اختَر ملف GLB');return}if(!f.name.toLowerCase().endsWith('.glb')){msg('حالياً ارفع GLB؛ دعم GLTF متعدد الملفات لاحقاً');return}modelName=document.getElementById('name').value.trim()||f.name;document.getElementById('editName').value=modelName;msg('جاري تحميل النموذج');let buf=await f.arrayBuffer();init3d();new THREE.GLTFLoader().parse(buf,'',async g=>{if(root)modelGroup.remove(root);root=g.scene;fit(root);modelGroup.add(root);anchor={...selected};blobId=String(Date.now())+Math.random();try{await storeFile(blobId,new Blob([buf],{type:'model/gltf-binary'}))}catch(e){msg('تعذر تخزين الملف محلياً')}document.getElementById('rot').value=0;document.getElementById('scale').value=1;document.getElementById('elev').value=0;rotation(0);scaling(1);elevation(0);setMode('move');map.flyTo({center:[anchor.lng,anchor.lat],zoom:17,pitch:55,duration:900});positionModel();close('uploadSheet');open('editSheet');msg('تم تحميل النموذج. اسحبه مباشرة على الخريطة')},e=>msg('تعذر قراءة النموذج: '+e.message))}
+function rotation(v){if(root)root.rotation.y=Number(v)*Math.PI/180;document.getElementById('rv').textContent=v+'°';requestRender()}
+function scaling(v){if(root)root.scale.setScalar(Number(v));document.getElementById('sv').textContent=Number(v).toFixed(2)+'×';requestRender()}
+function elevation(v){document.getElementById('ev').textContent=Number(v).toFixed(1)+'م';requestRender()}
 function turn(n){let e=document.getElementById('rot');e.value=(Number(e.value)+n+360)%360;rotation(e.value)}
-function scaleBy(n){let e=document.getElementById('scale');e.value=Math.max(.2,Math.min(5,Number(e.value)+n)).toFixed(1);scaling(e.value)}
-function elevBy(n){let e=document.getElementById('elev');e.value=Math.max(0,Math.min(100,Number(e.value)+n));elevation(e.value)}
-function moveBy(dx,dy){if(!anchor)return;let m=2.5,lat=anchor.lat;anchor.lng+=dx*m/(111320*Math.max(.15,Math.cos(lat*Math.PI/180)));anchor.lat+=dy*m/111320;selected={...anchor};document.getElementById('coords').textContent='الموقع: '+fmt(anchor);positionModel()}
+function scaleBy(n){let e=document.getElementById('scale');e.value=Math.max(.25,Math.min(3,Number(e.value)+n)).toFixed(2);scaling(e.value)}
+function resetScale(){document.getElementById('scale').value=1;scaling(1)}
 function resetModel(){document.getElementById('rot').value=0;document.getElementById('scale').value=1;document.getElementById('elev').value=0;rotation(0);scaling(1);elevation(0)}
 function moveMode(){if(!root)return;move=true;close('editSheet');msg('اضغط على الموقع الجديد بالخريطة لنقل المبنى')}
 function saveDraft(){let n=document.getElementById('editName').value.trim();if(n)modelName=n;storeRecord('draft')}
 function publish(){storeRecord('pending')}
 function storeRecord(status){if(!root||!anchor)return;items=items.filter(x=>x.id!==blobId);items.push({id:blobId,type:'model',name:modelName,fileId:blobId,lng:anchor.lng,lat:anchor.lat,rotation:Number(document.getElementById('rot').value),scale:Number(document.getElementById('scale').value),elevation:Number(document.getElementById('elev').value),status});saveMeta();close('editSheet');msg(status==='draft'?'تم حفظه كمسودة على هذا الجهاز':'أضيف لقائمة المراجعة المحلية؛ النشر العام يحتاج خادماً')}
-function cancelModel(){if(root)scene.remove(root);root=null;close('editSheet');msg('تم إلغاء النموذج')}
+function cancelModel(){if(root&&modelGroup)modelGroup.remove(root);root=null;anchor=null;close('editSheet');msg('تم إلغاء النموذج')}
 function labelOpen(){close('menuSheet');open('labelSheet')}
 function saveLabel(){let n=document.getElementById('label').value.trim();if(!n||!selected)return;items.push({id:String(Date.now()),type:'label',name:n,lng:selected.lng,lat:selected.lat,status:'draft'});saveMeta();close('labelSheet');msg('تم حفظ التسمية محلياً')}
 function favorite(){if(!selected)return;let n=prompt('اسم الموقع','موقع محفوظ');if(n===null)return;items.push({id:String(Date.now()),type:'favorite',name:n,lng:selected.lng,lat:selected.lat,status:'draft'});saveMeta();close('menuSheet');msg('تم حفظ الموقع')}
 function copyCoords(){if(!selected)return;let s=selected.lng+', '+selected.lat;if(navigator.clipboard?.writeText)navigator.clipboard.writeText(s).then(()=>msg('تم نسخ الإحداثيات')).catch(()=>msg(s));else msg(s);close('menuSheet')}
 function savedOpen(){let b=document.getElementById('savedList');b.innerHTML=items.length?items.map(x=>`<div class="saved"><b>${esc(x.name)}</b><small>${x.type} · ${x.status||'draft'} · ${x.lat.toFixed(5)}, ${x.lng.toFixed(5)}</small><button class="btn alt" onclick="focusItem('${x.id}')">عرض</button><button class="btn alt" onclick="deleteItem('${x.id}')">حذف</button></div>`).join(''):'<p>لا توجد عناصر محفوظة.</p>';open('savedSheet')}
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-async function focusItem(id){let x=items.find(a=>a.id===id);if(!x)return;close('savedSheet');selected={lng:x.lng,lat:x.lat};map.flyTo({center:[x.lng,x.lat],zoom:17,pitch:50});if(x.type==='model'){let blob=await readFile(x.fileId);if(!blob){msg('ملف النموذج غير موجود بهذا المتصفح');return}let url=URL.createObjectURL(blob);init3d();new THREE.GLTFLoader().load(url,g=>{if(root)scene.remove(root);root=g.scene;fit(root);scene.add(root);anchor={lng:x.lng,lat:x.lat};document.getElementById('rot').value=x.rotation||0;document.getElementById('scale').value=x.scale||1;document.getElementById('elev').value=x.elevation||0;rotation(x.rotation||0);scaling(x.scale||1);elevation(x.elevation||0);blobId=x.fileId;modelName=x.name;document.getElementById('editName').value=x.name||'';positionModel();open('editSheet');URL.revokeObjectURL(url)})}}
+async function focusItem(id){let x=items.find(a=>a.id===id);if(!x)return;close('savedSheet');selected={lng:x.lng,lat:x.lat};map.flyTo({center:[x.lng,x.lat],zoom:17,pitch:50});if(x.type==='model'){let blob=await readFile(x.fileId);if(!blob){msg('ملف النموذج غير موجود بهذا المتصفح');return}let url=URL.createObjectURL(blob);init3d();new THREE.GLTFLoader().load(url,g=>{if(root)modelGroup.remove(root);root=g.scene;fit(root);modelGroup.add(root);anchor={lng:x.lng,lat:x.lat};document.getElementById('rot').value=x.rotation||0;document.getElementById('scale').value=x.scale||1;document.getElementById('elev').value=x.elevation||0;root.scale.setScalar(x.scale||1);rotation(x.rotation||0);scaling(x.scale||1);elevation(x.elevation||0);blobId=x.fileId;modelName=x.name;document.getElementById('editName').value=x.name||'';positionModel();open('editSheet');URL.revokeObjectURL(url)})}}
 async function deleteItem(id){let x=items.find(a=>a.id===id);if(!x||!confirm('تأكيد الحذف؟'))return;items=items.filter(a=>a.id!==id);saveMeta();if(x.fileId){let d=await dbOpen();d.transaction('files','readwrite').objectStore('files').delete(x.fileId)}savedOpen()}
-map.on('move',()=>positionModel());map.on('zoom',()=>positionModel());map.on('pitch',()=>positionModel());map.on('rotate',()=>positionModel());
-let timer=null,start=null,longDone=false;map.getCanvas().addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button!==0)return;start={x:e.clientX,y:e.clientY};longDone=false;clearTimeout(timer);timer=setTimeout(()=>{if(!start)return;longDone=true;let r=map.getCanvas().getBoundingClientRect(),ll=map.unproject([start.x-r.left,start.y-r.top]);if(move&&root){anchor={lng:ll.lng,lat:ll.lat};selected={...anchor};move=false;positionModel();open('editSheet');msg('تم نقل النموذج للموقع الجديد')}else choose(ll,true);if(navigator.vibrate)navigator.vibrate(30)},550)},{passive:true});
-map.getCanvas().addEventListener('pointermove',e=>{if(start&&Math.hypot(e.clientX-start.x,e.clientY-start.y)>12){clearTimeout(timer);start=null}},{passive:true});
-['pointerup','pointercancel','pointerleave'].forEach(ev=>map.getCanvas().addEventListener(ev,()=>{clearTimeout(timer);start=null},{passive:true}));
-map.on('click',e=>{if(longDone){longDone=false;return}if(move&&root){anchor={lng:e.lngLat.lng,lat:e.lngLat.lat};selected={...anchor};move=false;positionModel();open('editSheet');msg('تم نقل النموذج')}else choose(e.lngLat,false)});
+map.on('move',()=>requestRender());map.on('zoom',()=>requestRender());map.on('pitch',()=>requestRender());map.on('rotate',()=>requestRender());
+map.on('load',()=>{init3d();requestRender()});
+function canvasPoint(e){const r=map.getCanvas().getBoundingClientRect();return [e.clientX-r.left,e.clientY-r.top]}
+const mapCanvas=map.getCanvas();
+mapCanvas.addEventListener('pointerdown',e=>{
+ if(!root||!anchor||mode==='none')return;
+ if(e.pointerType==='mouse'&&e.button!==0)return;
+ e.preventDefault();e.stopImmediatePropagation();
+ map.dragPan.disable();
+ mapCanvas.setPointerCapture?.(e.pointerId);
+ dragState={id:e.pointerId,x:e.clientX,y:e.clientY,rotation:Number(document.getElementById('rot').value)};
+},{capture:true});
+mapCanvas.addEventListener('pointermove',e=>{
+ if(!dragState||dragState.id!==e.pointerId)return;
+ e.preventDefault();e.stopImmediatePropagation();
+ if(mode==='move'){
+  const p=canvasPoint(e),ll=map.unproject(p);anchor={lng:ll.lng,lat:ll.lat};
+  document.getElementById('coords').textContent='الموقع: '+fmt(anchor);
+ }else if(mode==='rotate'){
+  const delta=e.clientX-dragState.x;
+  let v=(dragState.rotation+delta*.7)%360;if(v<0)v+=360;
+  document.getElementById('rot').value=Math.round(v);rotation(Math.round(v));
+ }
+ requestRender();
+},{capture:true});
+function finishDirectDrag(e){
+ if(!dragState)return;
+ e.preventDefault();e.stopImmediatePropagation();
+ dragState=null;map.dragPan.enable();requestRender();
+}
+mapCanvas.addEventListener('pointerup',finishDirectDrag,{capture:true});
+mapCanvas.addEventListener('pointercancel',finishDirectDrag,{capture:true});
+mapCanvas.addEventListener('click',e=>{
+ if(dragState)return;
+ if(move&&root){const r=mapCanvas.getBoundingClientRect(),ll=map.unproject([e.clientX-r.left,e.clientY-r.top]);anchor={lng:ll.lng,lat:ll.lat};selected={...anchor};move=false;positionModel();open('editSheet');msg('تم نقل المبنى')}
+ else if(!root){const r=mapCanvas.getBoundingClientRect(),ll=map.unproject([e.clientX-r.left,e.clientY-r.top]);choose(ll,false)}
+});
 </script></body></html>
