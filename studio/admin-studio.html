@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="ar" dir="rtl">
 <head>
@@ -9,22 +8,27 @@
 <script src="https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.js"></script>
 <script src="https://unpkg.com/three@0.146.0/build/three.min.js"></script>
 <script src="https://unpkg.com/three@0.146.0/examples/js/loaders/GLTFLoader.js"></script>
+<!-- اختياريان: لدعم ملفات GLB المضغوطة (Draco / Meshopt). إن لم يتم تحميلهما يعمل التطبيق بدونهما. -->
+<script src="https://unpkg.com/three@0.146.0/examples/js/loaders/DRACOLoader.js" onerror="void 0"></script>
+<script src="https://unpkg.com/three@0.146.0/examples/js/libs/meshopt_decoder.js" onerror="void 0"></script>
 <style>
 *{box-sizing:border-box}
-html,body{height:100%;margin:0;overflow:hidden;background:#101722;color:#fff;font-family:Arial,sans-serif}
-body{display:flex;flex-direction:column}
+html,body{height:100%;margin:0;overflow:hidden;overscroll-behavior:none;background:#101722;color:#fff;font-family:Arial,sans-serif;-webkit-text-size-adjust:100%}
+body{position:fixed;inset:0;width:100%;display:flex;flex-direction:column}
+@supports (height:100dvh){body{height:100dvh}}
 header,footer{background:#101722;padding:11px 12px;border-color:#39485d;z-index:2}
-header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #39485d;min-height:62px}
+header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #39485d;min-height:62px;padding-top:calc(11px + env(safe-area-inset-top))}
 footer{border-top:1px solid #39485d;padding-bottom:calc(11px + env(safe-area-inset-bottom))}
 #mapwrap{position:relative;flex:1;min-height:150px}
 #map{position:absolute;inset:0}
+button{touch-action:manipulation;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;font-family:inherit}
 .btn{background:#347ff0;color:#fff;border:0;border-radius:10px;padding:11px;margin:3px;font-size:14px}
 .alt{background:#29384c}
 .hint{font-size:12px;color:#bbc6d5;line-height:1.5;margin:0 0 7px}
 .coords{font-size:12px;color:#a9caff;margin:0 0 8px;direction:ltr;text-align:right;overflow-wrap:anywhere}
 .row{display:flex;gap:6px;flex-wrap:wrap}
 .scrim{display:none;position:fixed;inset:0;background:#0009;z-index:9;align-items:flex-end}
-.sheet{background:#192638;border-radius:20px 20px 0 0;border:1px solid #40516a;padding:17px;width:100%;max-height:82%;overflow:auto;padding-bottom:calc(18px + env(safe-area-inset-bottom))}
+.sheet{background:#192638;border-radius:20px 20px 0 0;border:1px solid #40516a;padding:17px;width:100%;max-height:82%;overflow:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(18px + env(safe-area-inset-bottom))}
 .sheet h3{margin:0 0 8px}
 .sheet p{font-size:12px;color:#bbc6d5}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -32,11 +36,12 @@ footer{border-top:1px solid #39485d;padding-bottom:calc(11px + env(safe-area-ins
 .choice b{display:block}
 .choice small{color:#bac6d6}
 .field{display:block;margin:12px 0 5px;font-size:13px;color:#cbd5e1}
-input{width:100%;padding:12px;border-radius:10px;border:1px solid #50617a;background:#101722;color:#fff;font-size:15px}
+/* 16px على الأقل حتى لا يقوم Safari على iPhone بتكبير الصفحة عند التركيز على الحقل */
+input{width:100%;padding:12px;border-radius:10px;border:1px solid #50617a;background:#101722;color:#fff;font-size:16px}
 .bar{display:flex;gap:8px;margin-top:12px}
 .bar button{flex:1}
 .saved{padding:10px;background:#29394f;border-radius:10px;margin:8px 0;font-size:13px;overflow-wrap:anywhere}
-#editToolbar{display:none;position:absolute;z-index:8;left:9px;right:9px;bottom:10px;background:#142238f2;border:1px solid #526781;border-radius:15px;padding:8px;box-shadow:0 5px 24px #0008;backdrop-filter:blur(12px)}
+#editToolbar{display:none;position:absolute;z-index:8;left:9px;right:9px;bottom:10px;background:#142238f2;border:1px solid #526781;border-radius:15px;padding:8px;box-shadow:0 5px 24px #0008;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
 #editToolbar .toolrow{display:flex;gap:5px;justify-content:center;flex-wrap:wrap}
 #editToolbar button{border:1px solid #536780;border-radius:9px;background:#2b3e56;color:#fff;padding:9px 10px;font-size:12px;min-width:58px}
 #editToolbar button.active{background:#2879ed;border-color:#2879ed}
@@ -47,7 +52,7 @@ input{width:100%;padding:12px;border-radius:10px;border:1px solid #50617a;backgr
 .toolbarHint{text-align:center;font-size:11px;color:#d0d9e6;padding:4px 0 7px}
 #toast{display:none;position:fixed;z-index:20;top:calc(65px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);background:#101722;border:1px solid #50617a;padding:10px 13px;border-radius:10px;font-size:12px;max-width:90%;text-align:center;box-shadow:0 4px 20px #0008}
 .busy{opacity:.65;pointer-events:none}
-#map canvas{touch-action:none}
+#map canvas{touch-action:none;-webkit-user-select:none;user-select:none}
 </style>
 </head>
 <body>
@@ -76,7 +81,7 @@ input{width:100%;padding:12px;border-radius:10px;border:1px solid #50617a;backgr
   <button onclick="elevBy(1)">رفع</button>
  </div>
  <div class="actions">
-  <button class="save" onclick="saveDraft()">✓ حفظ</button>
+  <button class="save" id="saveBtn" onclick="saveDraft()">✓ حفظ</button>
   <button class="cancel" onclick="cancelModel()">✕ إلغاء</button>
  </div>
 </div>
@@ -105,7 +110,7 @@ input{width:100%;padding:12px;border-radius:10px;border:1px solid #50617a;backgr
 <button class="choice" onclick="copyCoords()"><b>🧭 نسخ الإحداثيات</b><small>نسخ الموقع</small></button>
 </div>
 <div class="bar">
-<button class="btn alt" onclick="close('menuSheet')">إغلاق</button>
+<button class="btn alt" onclick="closeSheet('menuSheet')">إغلاق</button>
 </div>
 </section>
 </div>
@@ -115,12 +120,12 @@ input{width:100%;padding:12px;border-radius:10px;border:1px solid #50617a;backgr
 <h3>رفع نموذج المبنى</h3>
 <p>اختر ملف GLB. الحد الأقصى 250MB.</p>
 <label class="field" for="file">ملف 3D</label>
-<input id="file" type="file" accept=".glb,model/gltf-binary">
+<input id="file" type="file" accept=".glb,model/gltf-binary,application/octet-stream">
 <label class="field" for="name">اسم المبنى</label>
 <input id="name" placeholder="اسم المبنى">
 <div class="bar">
 <button class="btn" id="uploadBtn" onclick="loadModel()">رفع وعرض المبنى</button>
-<button class="btn alt" onclick="close('uploadSheet')">رجوع</button>
+<button class="btn alt" onclick="closeSheet('uploadSheet')">رجوع</button>
 </div>
 </section>
 </div>
@@ -129,7 +134,7 @@ input{width:100%;padding:12px;border-radius:10px;border:1px solid #50617a;backgr
 <section class="sheet">
 <h3>العناصر المحفوظة</h3>
 <div id="savedList"></div>
-<button class="btn alt" onclick="close('savedSheet')">إغلاق</button>
+<button class="btn alt" onclick="closeSheet('savedSheet')">إغلاق</button>
 </section>
 </div>
 
@@ -139,7 +144,7 @@ input{width:100%;padding:12px;border-radius:10px;border:1px solid #50617a;backgr
 <input id="label" placeholder="اسم المكان">
 <div class="bar">
 <button class="btn" onclick="saveLabel()">حفظ</button>
-<button class="btn alt" onclick="close('labelSheet')">رجوع</button>
+<button class="btn alt" onclick="closeSheet('labelSheet')">رجوع</button>
 </div>
 </section>
 </div>
@@ -148,68 +153,89 @@ input{width:100%;padding:12px;border-radius:10px;border:1px solid #50617a;backgr
 'use strict';
 
 const KEY='mapo_studio_glb_v2';
+const LEGACY_KEY='mapo_studio_glb_v1';
 const DB='mapo_glb_files_v2';
-const DEFAULT_FOOTPRINT_METERS=70;
+const LEGACY_DB='mapo_glb_files';
+// وحدة glTF هي المتر، فيُعرض المبنى بحجمه الحقيقي (المقياس 1 = الحجم الأصلي للملف).
+// لا نغيّر الحجم إلا إذا كانت الأبعاد غير معقولة (غالباً وحدات خاطئة: ملم/سم/بوصة)،
+// وعندها نضبطه تلقائياً إلى AUTO_FIT_METERS ونُعلم المستخدم بذلك صراحة.
+const MIN_REAL_METERS=3;             // أصغر من هذا (أفقياً) = غالباً الملف بوحدة خاطئة
+const MAX_REAL_METERS=2500;          // أكبر من هذا = غالباً الملف بوحدة خاطئة
+const AUTO_FIT_METERS=100;           // العرض المستهدف عند الضبط التلقائي فقط
+const LEGACY_FOOTPRINT_METERS=70;    // سلوك النسخة القديمة (للعناصر المحفوظة سابقاً فقط)
+const LEGACY_MAX_HEIGHT_METERS=300;
+const MIN_ELEVATION=-50,MAX_ELEVATION=200;
+const MAX_FILE_BYTES=250*1024*1024;
+const SOFTEN_METALS=true;            // بدون خريطة بيئة تظهر المواد المعدنية سوداء/رمادية، فنخفف المعدنية
 
 let items=[];
+let needsMetaMigration=false;
 try{
- items=JSON.parse(localStorage.getItem(KEY)||'[]');
+ const current=localStorage.getItem(KEY);
+ const legacy=current===null?localStorage.getItem(LEGACY_KEY):null;
+ items=JSON.parse(current!==null?current:(legacy||'[]'));
  if(!Array.isArray(items))items=[];
+ needsMetaMigration=current===null&&legacy!==null;
 }catch(e){items=[];}
 
-let selected=null;
-let root=null;
+// ---------------------------------------------------------------- الحالة
+let selected=null;          // الموقع المحدد على الخريطة
 let scene=null;
 let camera=null;
 let renderer=null;
-let anchor=null;
-let blobId=null;
-let modelName='';
-let modelGroup=null;
+let layerMap=null;
 let modelLayer=null;
+let gltfLoader=null;
 
-let mode='move';
-let dragState=null;
-let justDragged=false;
-let elevationMeters=0;
-let originalState=null;
-let isLoading=false;
-let isExistingModel=false;
+// كل المباني الظاهرة على الخريطة: id -> entry
+// entry = {id,name,fileId,group,anchor:{lng,lat},elevation,buffer,persisted}
+const placed=new Map();
+const loadingSaved=new Map();
+let active=null;            // المبنى الذي يجري تعديله الآن
 let editing=false;
+let isNewModel=false;
+let originalState=null;
+let mode='move';
+let drag=null;
+let lastDragEnd=0;
+let isLoading=false;
+let isSaving=false;
+
+const dbg=window.__mapoDebug={renderCalls:0,drawn:0,lastError:null,matrixSource:null};
+
+// ---------------------------------------------------------------- الخريطة
+if(!window.maplibregl){
+ document.body.insertAdjacentHTML('afterbegin','<p style="padding:16px">تعذر تحميل مكتبة الخرائط. تحقق من الإنترنت ثم حدّث الصفحة.</p>');
+ throw new Error('maplibregl missing');
+}
 
 const map=new maplibregl.Map({
  container:'map',
  style:'https://tiles.openfreemap.org/styles/liberty',
  center:[0,18],
  zoom:1.55,
- antialias:true
+ canvasContextAttributes:{antialias:true}
 });
 
 map.addControl(new maplibregl.NavigationControl(),'top-right');
 
-let rtlReady=false;
-
+// MapLibre 5: الدالة ترجع Promise ولا تقبل callback.
 try{
- maplibregl.setRTLTextPlugin(
+ const p=maplibregl.setRTLTextPlugin(
   'https://unpkg.com/@mapbox/mapbox-gl-rtl-text@0.3.0/dist/mapbox-gl-rtl-text.js',
-  err=>{
-   if(err)console.warn('RTL plugin:',err);
-   else{
-    rtlReady=true;
-    applyArabicLabels();
-   }
-  },
   true
  );
+ if(p&&p.catch)p.catch(err=>console.warn('RTL plugin:',err));
 }catch(err){
  console.warn('RTL plugin unavailable',err);
 }
 
 function applyArabicLabels(){
- if(!map.isStyleLoaded())return;
+ let layers;
+ try{layers=map.getStyle().layers||[];}catch(e){return;}
 
- for(const layer of map.getStyle().layers||[]){
-  if(layer.type!=='symbol'||!layer.layout?.['text-field'])continue;
+ for(const layer of layers){
+  if(layer.type!=='symbol'||!layer.layout||!layer.layout['text-field'])continue;
 
   try{
    map.setLayoutProperty(layer.id,'text-field',[
@@ -227,7 +253,9 @@ function applyArabicLabels(){
 }
 
 map.on('style.load',()=>{
- if(rtlReady)applyArabicLabels();
+ try{if(map.setProjection)map.setProjection({type:'mercator'});}catch(e){}
+ applyArabicLabels();
+ attachLayer();
 });
 
 function msg(s,ms=3500){
@@ -238,16 +266,18 @@ function msg(s,ms=3500){
  msg.t=setTimeout(()=>e.style.display='none',ms);
 }
 
-function open(id){
+// ملاحظة: تم تغيير الاسمين open/close لأن close داخل onclick كان يُحلّ إلى document.close
+// فلا تُغلق النوافذ أبداً عند الضغط على "إغلاق/رجوع".
+function openSheet(id){
  document.getElementById(id).style.display='flex';
 }
 
-function close(id){
+function closeSheet(id){
  document.getElementById(id).style.display='none';
 }
 
 function back(e,id){
- if(e.target.id===id)close(id);
+ if(e.target.id===id)closeSheet(id);
 }
 
 function saveMeta(){
@@ -268,11 +298,11 @@ function choose(ll,show=true){
  selected={lng:ll.lng,lat:ll.lat};
  document.getElementById('coords').textContent='الموقع: '+fmt(selected);
  document.getElementById('placeText').textContent='الإحداثيات: '+fmt(selected);
- if(show)open('menuSheet');
+ if(show)openSheet('menuSheet');
 }
 
 function menu(){
- if(root&&editing){
+ if(editing){
   msg('احفظ التعديل أو ألغِه أولاً');
   return;
  }
@@ -282,7 +312,8 @@ function menu(){
   return;
  }
 
- open('menuSheet');
+ document.getElementById('placeText').textContent='الإحداثيات: '+fmt(selected);
+ openSheet('menuSheet');
 }
 
 function world(){
@@ -294,7 +325,7 @@ function tilt(){
 }
 
 function uploadOpen(){
- if(root&&editing){
+ if(editing){
   msg('أنهِ تعديل المبنى الحالي بالحفظ أو الإلغاء أولاً');
   return;
  }
@@ -304,12 +335,18 @@ function uploadOpen(){
   return;
  }
 
- close('menuSheet');
- open('uploadSheet');
+ closeSheet('menuSheet');
+ openSheet('uploadSheet');
 }
 
+// ---------------------------------------------------------------- IndexedDB
 function dbOpen(){
  return new Promise((resolve,reject)=>{
+  if(!window.indexedDB){
+   reject(new Error('التخزين المحلي (IndexedDB) غير متاح في هذا المتصفح'));
+   return;
+  }
+
   const request=indexedDB.open(DB,1);
 
   request.onupgradeneeded=()=>{
@@ -327,8 +364,16 @@ async function storeFile(id,blob){
  const db=await dbOpen();
 
  return new Promise((resolve,reject)=>{
-  const tx=db.transaction('files','readwrite');
-  tx.objectStore('files').put({id,blob});
+  let tx;
+
+  try{
+   tx=db.transaction('files','readwrite');
+   tx.objectStore('files').put({id,blob});
+  }catch(err){
+   db.close();
+   reject(err);
+   return;
+  }
 
   tx.oncomplete=()=>{
    db.close();
@@ -357,9 +402,9 @@ async function readFile(id){
   const request=tx.objectStore('files').get(id);
 
   request.onsuccess=()=>{
-   const blob=request.result?.blob;
+   const rec=request.result;
    db.close();
-   resolve(blob);
+   resolve(rec?(rec.blob||rec.data):undefined);
   };
 
   request.onerror=()=>{
@@ -368,6 +413,72 @@ async function readFile(id){
    reject(err||new Error('تعذر قراءة الملف'));
   };
  });
+}
+
+// قراءة ملفات الإصدار السابق عند الحاجة، ثم نسخها إلى قاعدة v2 بعد نجاح القراءة.
+async function readLegacyFile(id){
+ if(!window.indexedDB)return undefined;
+
+ return new Promise(resolve=>{
+  let request;
+  let created=false;
+
+  try{request=indexedDB.open(LEGACY_DB);}catch(e){resolve(undefined);return;}
+
+  request.onupgradeneeded=()=>{
+   // لا ننشئ قاعدة قديمة فارغة إذا لم تكن موجودة أصلاً.
+   created=true;
+   try{request.transaction.abort();}catch(e){}
+  };
+
+  request.onerror=()=>{
+   if(created){try{indexedDB.deleteDatabase(LEGACY_DB);}catch(e){}}
+   resolve(undefined);
+  };
+
+  request.onsuccess=()=>{
+   const db=request.result;
+
+   if(!db.objectStoreNames.contains('files')){
+    db.close();
+    resolve(undefined);
+    return;
+   }
+
+   let tx;
+
+   try{tx=db.transaction('files','readonly');}
+   catch(e){db.close();resolve(undefined);return;}
+
+   const get=tx.objectStore('files').get(id);
+
+   get.onsuccess=()=>{
+    const rec=get.result;
+    db.close();
+    resolve(rec?(rec.blob||rec.data):undefined);
+   };
+
+   get.onerror=()=>{
+    db.close();
+    resolve(undefined);
+   };
+  };
+ });
+}
+
+async function readFileWithMigration(id){
+ let data=await readFile(id).catch(()=>undefined);
+
+ if(data)return data;
+
+ data=await readLegacyFile(id);
+
+ if(data){
+  try{await storeFile(id,data);}
+  catch(error){console.warn('Legacy file copy failed',error);}
+ }
+
+ return data;
 }
 
 async function deleteStoredFile(id){
@@ -390,6 +501,115 @@ async function deleteStoredFile(id){
  });
 }
 
+async function listStoredFileIds(){
+ const db=await dbOpen();
+
+ return new Promise((resolve,reject)=>{
+  const request=db.transaction('files','readonly').objectStore('files').getAllKeys();
+
+  request.onsuccess=()=>{
+   db.close();
+   resolve(request.result||[]);
+  };
+
+  request.onerror=()=>{
+   const err=request.error;
+   db.close();
+   reject(err);
+  };
+ });
+}
+
+// حذف ملفات GLB اليتيمة (التي رُفعت ثم أُغلقت الصفحة قبل الحفظ).
+async function pruneOrphans(){
+ try{
+  const used=new Set(items.map(item=>item&&item.fileId).filter(Boolean));
+  placed.forEach(entry=>used.add(entry.fileId));
+
+  for(const key of await listStoredFileIds()){
+   if(!used.has(key))await deleteStoredFile(key).catch(()=>{});
+  }
+ }catch(error){
+  console.warn('prune',error);
+ }
+}
+
+function toArrayBuffer(data){
+ if(data instanceof ArrayBuffer)return Promise.resolve(data);
+ if(data&&typeof data.arrayBuffer==='function')return data.arrayBuffer();
+
+ return new Promise((resolve,reject)=>{
+  const reader=new FileReader();
+  reader.onload=()=>resolve(reader.result);
+  reader.onerror=()=>reject(reader.error||new Error('تعذر قراءة الملف'));
+  reader.readAsArrayBuffer(data);
+ });
+}
+
+// ---------------------------------------------------------------- Three.js داخل MapLibre
+function ensureRenderer(gl){
+ if(renderer&&renderer.getContext()===gl)return true;
+
+ try{
+  if(renderer){
+   try{renderer.dispose();}catch(e){}
+   renderer=null;
+  }
+
+  renderer=new THREE.WebGLRenderer({
+   canvas:layerMap.getCanvas(),
+   context:gl,
+   antialias:true
+  });
+
+  renderer.autoClear=false;
+
+  // الإصدار 0.146 يستخدم outputEncoding (الاسم outputColorSpace ظهر في r152 فقط).
+  renderer.outputEncoding=THREE.sRGBEncoding;
+
+  return true;
+ }catch(error){
+  dbg.lastError=String(error&&error.message||error);
+  console.error('Three renderer',error);
+  renderer=null;
+  return false;
+ }
+}
+
+// MapLibre 5 يمرر كائناً (CustomRenderMethodInput) وليس مصفوفة.
+function projectionMatrixFrom(args){
+ if(args&&args.defaultProjectionData&&args.defaultProjectionData.mainMatrix){
+  dbg.matrixSource='defaultProjectionData.mainMatrix';
+  return args.defaultProjectionData.mainMatrix;
+ }
+
+ if(args&&args.modelViewProjectionMatrix){
+  dbg.matrixSource='modelViewProjectionMatrix';
+  return args.modelViewProjectionMatrix;
+ }
+
+ if(args&&args.length===16){
+  dbg.matrixSource='array';
+  return args;
+ }
+
+ return null;
+}
+
+function handleContextLost(event){
+ // MapLibre owns the shared context; preventDefault allows the browser to restore it.
+ if(event&&event.preventDefault)event.preventDefault();
+ renderer=null;
+ dbg.lastError='WebGL context lost; waiting for restoration';
+}
+
+function handleContextRestored(){
+ // Force Three.js to create a fresh renderer wrapper on the restored shared context.
+ renderer=null;
+ dbg.lastError=null;
+ requestRender();
+}
+
 function init3d(){
  if(scene)return;
 
@@ -397,17 +617,24 @@ function init3d(){
   throw new Error('مكتبات Three.js لم يتم تحميلها. تحقق من الإنترنت ثم حدّث الصفحة.');
  }
 
- scene=new THREE.Scene();
- camera=new THREE.Camera();
+ // نبني المشهد بمتغيرات محلية ثم نعيّنه في النهاية، حتى لا يبقى init3d نصف مكتمل إذا فشل.
+ const newScene=new THREE.Scene();
+ const newCamera=new THREE.Camera();
 
- scene.add(new THREE.HemisphereLight(0xffffff,0x777777,1.7));
+ // المحرك الحالي (r146) يستخدم الإضاءة التقليدية: شدة 1 تعطي لون المادة تقريباً.
+ // القيم السابقة (1.7 و 2.0) كانت تحرق الألوان وتجعل المبنى رمادياً مسطحاً.
+ newScene.add(new THREE.HemisphereLight(0xffffff,0x8a909b,0.85));
 
- const sun=new THREE.DirectionalLight(0xffffff,2.0);
+ const sun=new THREE.DirectionalLight(0xffffff,0.9);
  sun.position.set(-80,120,80);
- scene.add(sun);
+ newScene.add(sun);
 
- modelGroup=new THREE.Group();
- scene.add(modelGroup);
+ const fill=new THREE.DirectionalLight(0xdfe8ff,0.3);
+ fill.position.set(90,50,-70);
+ newScene.add(fill);
+
+ // دوران يحوّل محور Y (الأعلى في glTF) إلى محور Z (الارتفاع في Mercator).
+ const rotateX=new THREE.Matrix4().makeRotationX(Math.PI/2);
 
  modelLayer={
   id:'mapo-3d-model-layer',
@@ -415,63 +642,100 @@ function init3d(){
   renderingMode:'3d',
 
   onAdd:function(m,gl){
-   renderer=new THREE.WebGLRenderer({
-    canvas:m.getCanvas(),
-    context:gl,
-    antialias:true
-   });
+   layerMap=m;
 
-   renderer.autoClear=false;
-   renderer.outputColorSpace=THREE.SRGBColorSpace;
+   const canvas=m.getCanvas();
+
+   canvas.addEventListener('webglcontextlost',handleContextLost,false);
+   canvas.addEventListener('webglcontextrestored',handleContextRestored,false);
+
+   ensureRenderer(gl);
   },
 
-  render:function(gl,matrix){
-   if(!renderer||!root||!anchor)return;
+  onRemove:function(m,gl){
+   const canvas=m&&m.getCanvas?m.getCanvas():null;
 
-   const mercator=maplibregl.MercatorCoordinate.fromLngLat(
-    [anchor.lng,anchor.lat],
-    elevationMeters
-   );
+   if(canvas){
+    canvas.removeEventListener('webglcontextlost',handleContextLost,false);
+    canvas.removeEventListener('webglcontextrestored',handleContextRestored,false);
+   }
 
-   const meterScale=mercator.meterInMercatorCoordinateUnits();
-   const mapMatrix=new THREE.Matrix4().fromArray(matrix);
+   if(renderer){
+    try{renderer.dispose();}catch(e){}
+    renderer=null;
+   }
 
-   const translate=new THREE.Matrix4().makeTranslation(
-    mercator.x,mercator.y,mercator.z
-   );
+   layerMap=null;
+  },
 
-   const rotate=new THREE.Matrix4().makeRotationX(Math.PI/2);
+  render:function(gl,args){
+   dbg.renderCalls++;
 
-   const scale=new THREE.Matrix4().makeScale(
-    meterScale,-meterScale,meterScale
-   );
+   if(!scene||!placed.size||!layerMap)return;
+   if(!ensureRenderer(gl))return;
 
-   // ترتيب التحويل المستخدم لربط Three.js بإحداثيات MapLibre.
-   camera.projectionMatrix
-    .copy(mapMatrix)
-    .multiply(translate)
-    .multiply(rotate)
-    .multiply(scale);
+   const raw=projectionMatrixFrom(args);
 
-   camera.projectionMatrixInverse
-    .copy(camera.projectionMatrix)
-    .invert();
+   if(!raw||!Number.isFinite(raw[0])||!Number.isFinite(raw[5])){
+    dbg.lastError='لم يتم استلام مصفوفة إسقاط صالحة من MapLibre';
+    return;
+   }
 
-   renderer.resetState();
-   renderer.render(scene,camera);
+   const mapMatrix=new THREE.Matrix4().fromArray(raw);
+
+   // لا نغيّر pixelRatio أو viewport هنا: MapLibre يملك الـ canvas والـ viewport.
+   // استدعاء setPixelRatio/setViewport من داخل custom layer قد يغيّر أبعاد canvas
+   // المشترك ويكسر رسم الخريطة، خصوصاً على Safari وواجهات Retina.
+   placed.forEach(entry=>{entry.group.visible=false;});
+
+   try{
+    placed.forEach(entry=>{
+     const mercator=maplibregl.MercatorCoordinate.fromLngLat(
+      [entry.anchor.lng,entry.anchor.lat],
+      entry.elevation
+     );
+
+     const s=mercator.meterInMercatorCoordinateUnits();
+
+     // نفس تحويل MapLibre الرسمي: translate * scale(s,-s,s) * rotateX(90°).
+     const local=new THREE.Matrix4()
+      .makeTranslation(mercator.x,mercator.y,mercator.z)
+      .scale(new THREE.Vector3(s,-s,s))
+      .multiply(rotateX);
+
+     camera.projectionMatrix.copy(mapMatrix).multiply(local);
+     camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
+     camera.matrixWorld.identity();
+     camera.matrixWorldInverse.identity();
+
+     entry.group.visible=true;
+
+     renderer.resetState();
+     renderer.render(scene,camera);
+     renderer.resetState();
+
+     entry.group.visible=false;
+     dbg.drawn++;
+    });
+   }finally{
+    placed.forEach(entry=>{entry.group.visible=true;});
+   }
   }
  };
 
- if(map.isStyleLoaded()){
-  if(!map.getLayer(modelLayer.id)){
-   map.addLayer(modelLayer);
-  }
- }else{
-  map.once('load',()=>{
-   if(!map.getLayer(modelLayer.id)){
-    map.addLayer(modelLayer);
-   }
-  });
+ scene=newScene;
+ camera=newCamera;
+
+ attachLayer();
+}
+
+function attachLayer(){
+ if(!modelLayer)return;
+
+ try{
+  if(!map.getLayer(modelLayer.id))map.addLayer(modelLayer);
+ }catch(error){
+  map.once('load',attachLayer);
  }
 }
 
@@ -479,11 +743,81 @@ function requestRender(){
  if(map)map.triggerRepaint();
 }
 
-// توحيد وحدات النموذج ووضع قاعدته على الأرض.
-function normalizeModel(object,targetMeters=DEFAULT_FOOTPRINT_METERS){
- object.updateMatrixWorld(true);
+function getLoader(){
+ if(gltfLoader)return gltfLoader;
 
- let bounds=new THREE.Box3().setFromObject(object);
+ const loader=new THREE.GLTFLoader();
+
+ try{
+  if(THREE.DRACOLoader){
+   const draco=new THREE.DRACOLoader();
+   draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.5/');
+   loader.setDRACOLoader(draco);
+  }
+ }catch(e){console.warn('Draco',e);}
+
+ try{
+  if(window.MeshoptDecoder)loader.setMeshoptDecoder(window.MeshoptDecoder);
+ }catch(e){console.warn('Meshopt',e);}
+
+ gltfLoader=loader;
+ return loader;
+}
+
+function parseGLB(buffer){
+ return new Promise((resolve,reject)=>{
+  try{
+   getLoader().parse(
+    buffer,
+    '',
+    resolve,
+    error=>reject(error&&error.message?error:new Error('تعذر تحليل ملف GLB'))
+   );
+  }catch(error){
+   reject(error);
+  }
+ });
+}
+
+// تنظيف النموذج: إزالة الأضواء/الكاميرات المضمنة وتعطيل frustum culling وتخفيف المواد المعدنية.
+function prepareModel(object){
+ const extras=[];
+
+ object.traverse(node=>{
+  if(node.isLight||node.isCamera)extras.push(node);
+ });
+
+ extras.forEach(node=>{if(node.parent)node.parent.remove(node);});
+
+ object.traverse(node=>{
+  if(!(node.isMesh||node.isPoints||node.isLine))return;
+
+  node.frustumCulled=false;
+
+  const list=Array.isArray(node.material)?node.material:[node.material];
+
+  list.forEach(material=>{
+   if(!material)return;
+
+   if(SOFTEN_METALS&&material.isMeshStandardMaterial&&!material.metalnessMap&&!material.envMap&&material.metalness>0.35){
+    material.metalness=0.35;
+   }
+  });
+ });
+}
+
+// ضبط موضع النموذج: مركزه الأفقي عند نقطة الإحداثيات وأدنى نقطة فيه على الأرض.
+// الحجم الحقيقي يبقى كما هو (المقياس 1) إلا عند الحاجة (انظر الثوابت أعلاه).
+// نحسب الحدود بعد تطبيق تحويلات جذر glTF، لذلك يجب تطبيق الإزاحة على wrapper
+// ذي المحاور المحلية المطابقة لإحداثيات الحدود، لا على object.position المحلي.
+function normalizeModel(object,legacy=false){
+ prepareModel(object);
+
+ const wrapper=new THREE.Group();
+ wrapper.add(object);
+ wrapper.updateMatrixWorld(true);
+
+ let bounds=new THREE.Box3().setFromObject(wrapper,true);
 
  if(bounds.isEmpty()){
   throw new Error('النموذج لا يحتوي على مجسمات ثلاثية الأبعاد ظاهرة');
@@ -492,31 +826,115 @@ function normalizeModel(object,targetMeters=DEFAULT_FOOTPRINT_METERS){
  const size=bounds.getSize(new THREE.Vector3());
  const horizontal=Math.max(size.x,size.z);
 
- if(!Number.isFinite(horizontal)||horizontal<0.000001){
+ if(!Number.isFinite(horizontal)||horizontal<0.000001||!Number.isFinite(size.y)){
   throw new Error('أبعاد النموذج غير صالحة');
  }
 
- const factor=targetMeters/horizontal;
+ let factor=1;
+ let autoFitted=false;
 
- object.scale.multiplyScalar(factor);
- object.updateMatrixWorld(true);
+ if(legacy){
+  factor=LEGACY_FOOTPRINT_METERS/horizontal;
+  if(size.y>0.000001)factor=Math.min(factor,LEGACY_MAX_HEIGHT_METERS/size.y);
+ }else if(horizontal<MIN_REAL_METERS||horizontal>MAX_REAL_METERS){
+  factor=AUTO_FIT_METERS/horizontal;
+  autoFitted=true;
+ }
 
- bounds=new THREE.Box3().setFromObject(object);
+ if(factor!==1){
+  object.scale.multiplyScalar(factor);
+  wrapper.updateMatrixWorld(true);
+  bounds=new THREE.Box3().setFromObject(wrapper,true);
+ }
 
  const center=bounds.getCenter(new THREE.Vector3());
 
- object.position.x-=center.x;
- object.position.z-=center.z;
- object.position.y-=bounds.min.y;
+ wrapper.position.x-=center.x;
+ wrapper.position.z-=center.z;
+ wrapper.position.y-=bounds.min.y;
 
- object.updateMatrixWorld(true);
+ wrapper.updateMatrixWorld(true);
 
- const wrapper=new THREE.Group();
- wrapper.add(object);
+ // تحقق: المركز الأفقي عند 0 والقاعدة عند 0.
+ const check=new THREE.Box3().setFromObject(wrapper,true);
+ const cc=check.getCenter(new THREE.Vector3());
+ const tol=Math.max(0.001,horizontal*factor*1e-4);
 
- return wrapper;
+ if(Math.abs(cc.x)>tol||Math.abs(cc.z)>tol||Math.abs(check.min.y)>tol){
+  console.warn('normalizeModel: centering drift',cc,check.min);
+ }
+
+ const finalSize=check.getSize(new THREE.Vector3());
+
+ return{
+  group:wrapper,
+  factor,
+  autoFitted,
+  size:{x:finalSize.x,y:finalSize.y,z:finalSize.z},
+  radius:Math.max(finalSize.x,finalSize.z)/2
+ };
+}
+function disposeObject(object){
+ object.traverse(node=>{
+  if(node.geometry&&node.geometry.dispose)node.geometry.dispose();
+
+  const list=Array.isArray(node.material)?node.material:[node.material];
+
+  list.forEach(material=>{
+   if(!material)return;
+
+   Object.keys(material).forEach(key=>{
+    const value=material[key];
+    if(value&&value.isTexture)value.dispose();
+   });
+
+   if(material.dispose)material.dispose();
+  });
+ });
 }
 
+function createEntry(opts){
+ const legacy=!!opts.legacy;
+ const norm=normalizeModel(opts.object,legacy);
+ const group=norm.group;
+
+ group.rotation.y=opts.rotationY||0;
+ group.scale.setScalar(opts.scale||1);
+
+ scene.add(group);
+
+ const entry={
+  id:opts.id,
+  name:opts.name,
+  fileId:opts.fileId,
+  group,
+  anchor:{lng:opts.anchor.lng,lat:opts.anchor.lat},
+  elevation:opts.elevation||0,
+  buffer:null,
+  persisted:false,
+  legacy,
+  radius:norm.radius,
+  size:norm.size,
+  autoFitted:norm.autoFitted,
+  factor:norm.factor
+ };
+
+ placed.set(entry.id,entry);
+ attachLayer();
+ requestRender();
+
+ return entry;
+}
+
+function removeEntry(entry){
+ if(scene)scene.remove(entry.group);
+ disposeObject(entry.group);
+ placed.delete(entry.id);
+ entry.buffer=null;
+ requestRender();
+}
+
+// ---------------------------------------------------------------- أدوات التحرير
 function setMode(next){
  mode=next;
 
@@ -537,67 +955,73 @@ function hideToolbar(){
  document.getElementById('editToolbar').style.display='none';
 }
 
-function elevBy(n){
- elevationMeters=Math.max(0,Math.min(100,elevationMeters+n));
+function snapshot(entry){
+ return{
+  anchor:{...entry.anchor},
+  rotation:entry.group.rotation.y,
+  scale:entry.group.scale.x,
+  elevation:entry.elevation
+ };
+}
+
+function startEditing(entry,fresh){
+ active=entry;
+ isNewModel=fresh;
+ editing=true;
+ drag=null;
+ originalState=snapshot(entry);
+
+ selected={...entry.anchor};
+ document.getElementById('coords').textContent='الموقع: '+fmt(entry.anchor);
+
+ setMode('move');
+ showToolbar();
  requestRender();
 }
 
+function stopEditing(){
+ active=null;
+ editing=false;
+ isNewModel=false;
+ originalState=null;
+ drag=null;
+
+ hideToolbar();
+ requestRender();
+}
+
+function elevBy(n){
+ if(!active)return;
+
+ active.elevation=Math.max(MIN_ELEVATION,Math.min(MAX_ELEVATION,active.elevation+n));
+
+ requestRender();
+}
+
+// الزر "↷" يدير المبنى باتجاه عقارب الساعة (مشاهدة من الأعلى).
 function turn(n){
- if(!root)return;
- root.rotation.y+=n*Math.PI/180;
+ if(!active)return;
+
+ active.group.rotation.y-=n*Math.PI/180;
+
  requestRender();
 }
 
 function scaleBy(n){
- if(!root)return;
+ if(!active)return;
 
- const next=Math.max(.1,Math.min(10,root.scale.x+n));
- root.scale.setScalar(next);
+ const next=Math.max(0.05,Math.min(20,active.group.scale.x*Math.exp(n)));
 
- requestRender();
-}
-
-function captureState(){
- if(!root||!anchor)return null;
-
- return{
-  position:{...anchor},
-  rotation:root.rotation.y,
-  scale:root.scale.x,
-  elevation:elevationMeters
- };
-}
-
-function restoreState(state){
- if(!state||!root)return;
-
- anchor={...state.position};
- root.rotation.y=state.rotation;
- root.scale.setScalar(state.scale);
- elevationMeters=state.elevation;
+ active.group.scale.setScalar(next);
 
  requestRender();
 }
 
-function parseGLB(buffer){
- return new Promise((resolve,reject)=>{
-  try{
-   new THREE.GLTFLoader().parse(
-    buffer,
-    '',
-    resolve,
-    error=>reject(error||new Error('تعذر تحليل ملف GLB'))
-   );
-  }catch(error){
-   reject(error);
-  }
- });
-}
-
+// ---------------------------------------------------------------- رفع النموذج
 async function loadModel(){
  if(isLoading)return;
 
- const file=document.getElementById('file').files?.[0];
+ const file=document.getElementById('file').files&&document.getElementById('file').files[0];
 
  if(!file){
   msg('اختَر ملف GLB أولاً');
@@ -614,12 +1038,17 @@ async function loadModel(){
   return;
  }
 
+ if(editing){
+  msg('أنهِ تعديل المبنى الحالي بالحفظ أو الإلغاء أولاً');
+  return;
+ }
+
  if(!file.size){
   msg('الملف فارغ');
   return;
  }
 
- if(file.size>250*1024*1024){
+ if(file.size>MAX_FILE_BYTES){
   msg('حجم الملف أكبر من 250MB');
   return;
  }
@@ -633,10 +1062,8 @@ async function loadModel(){
  document.getElementById('uploadSheet').classList.add('busy');
  msg('جاري قراءة ملف النموذج...',15000);
 
- let storedId=null;
-
  try{
-  const buffer=await file.arrayBuffer();
+  const buffer=await toArrayBuffer(file);
 
   if(buffer.byteLength<12){
    throw new Error('الملف صغير أو غير مكتمل');
@@ -654,57 +1081,54 @@ async function loadModel(){
    throw new Error('لم يتم العثور على مشهد داخل الملف');
   }
 
-  const newRoot=normalizeModel(gltf.scene);
+  const id='glb_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
 
-  storedId='glb_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
+  const entry=createEntry({
+   id,
+   name:document.getElementById('name').value.trim()||file.name.replace(/\.glb$/i,''),
+   fileId:id,
+   object:gltf.scene,
+   anchor:selected,
+   elevation:0,
+   rotationY:0,
+   scale:1
+  });
 
-  await storeFile(
-   storedId,
-   new Blob([buffer],{type:'model/gltf-binary'})
-  );
-
-  if(root&&modelGroup){
-   modelGroup.remove(root);
+  // تخزين الملف: فشل التخزين لا يمنع العرض، ويُعاد المحاولة عند الضغط على "حفظ".
+  try{
+   await storeFile(id,new Blob([buffer],{type:'model/gltf-binary'}));
+   entry.persisted=true;
+  }catch(storeError){
+   console.warn('store failed',storeError);
+   entry.buffer=buffer;
   }
 
-  root=newRoot;
-  modelGroup.add(root);
+  startEditing(entry,true);
 
-  anchor={...selected};
-  blobId=storedId;
-
-  modelName=document.getElementById('name').value.trim()||
-   file.name.replace(/\.glb$/i,'');
-
-  elevationMeters=0;
-  isExistingModel=false;
-  editing=true;
-  originalState=captureState();
-
-  setMode('move');
-
-  close('uploadSheet');
+  closeSheet('uploadSheet');
 
   map.flyTo({
-   center:[anchor.lng,anchor.lat],
+   center:[entry.anchor.lng,entry.anchor.lat],
    zoom:18,
    pitch:55,
    duration:900
   });
 
-  showToolbar();
-  requestRender();
+  const dims=Math.round(entry.size.x)+'×'+Math.round(entry.size.z)+'×'+Math.round(entry.size.y)+' م';
 
-  msg('تم تحميل النموذج. اضغط على أي مكان بالخريطة لنقله.');
+  if(entry.autoFitted){
+   msg('أبعاد الملف غير معقولة كأمتار، فتم ضبط الحجم تلقائياً إلى '+dims+'. استخدم ± حجم للتعديل.',9000);
+  }else if(!entry.persisted){
+   msg('تم تحميل النموذج ('+dims+') لكن تعذر تخزين الملف بعد. سنحاول مرة أخرى عند الحفظ.',6000);
+  }else{
+   msg('تم تحميل النموذج بحجمه الحقيقي ('+dims+'). اضغط على الخريطة لنقله.',5000);
+  }
 
  }catch(error){
   console.error('GLB load failed:',error);
+  dbg.lastError=String(error&&error.message||error);
 
-  if(storedId){
-   deleteStoredFile(storedId).catch(()=>{});
-  }
-
-  msg('فشل تحميل النموذج: '+(error?.message||String(error)),7000);
+  msg('فشل تحميل النموذج: '+(error&&error.message||String(error)),7000);
 
  }finally{
   isLoading=false;
@@ -715,85 +1139,105 @@ async function loadModel(){
  }
 }
 
-function saveDraft(){
- if(!root||!anchor||!blobId){
+// ---------------------------------------------------------------- الحفظ والإلغاء
+async function saveDraft(){
+ if(!active){
   msg('ماكو نموذج مفتوح للحفظ');
   return;
  }
 
- const record={
-  id:blobId,
-  type:'model',
-  name:modelName,
-  fileId:blobId,
-  lng:anchor.lng,
-  lat:anchor.lat,
-  rotation:root.rotation.y*180/Math.PI,
-  scale:root.scale.x,
-  elevation:elevationMeters,
-  status:'draft'
- };
+ if(isSaving)return;
+ isSaving=true;
 
- const previous=items;
+ try{
+  const entry=active;
 
- items=items.filter(item=>item.id!==blobId);
- items.push(record);
+  if(!entry.persisted){
+   if(!entry.buffer){
+    msg('ملف النموذج غير محفوظ في المتصفح. ارفعه من جديد.');
+    return;
+   }
 
- if(!saveMeta()){
-  items=previous;
-  return;
+   try{
+    await storeFile(entry.fileId,new Blob([entry.buffer],{type:'model/gltf-binary'}));
+    entry.persisted=true;
+    entry.buffer=null;
+   }catch(error){
+    console.warn(error);
+    msg('تعذر تخزين ملف النموذج على هذا الجهاز: '+(error&&error.message||String(error)),6500);
+    return;
+   }
+  }
+
+  const record={
+   id:entry.id,
+   type:'model',
+   name:entry.name,
+   fileId:entry.fileId,
+   lng:entry.anchor.lng,
+   lat:entry.anchor.lat,
+   rotation:entry.group.rotation.y*180/Math.PI,
+   scale:entry.group.scale.x,
+   elevation:entry.elevation,
+   v:entry.legacy?2:3,
+   status:'draft'
+  };
+
+  const previous=items;
+
+  items=items.filter(item=>item.id!==entry.id);
+  items.push(record);
+
+  if(!saveMeta()){
+   items=previous;
+   return;
+  }
+
+  try{
+   if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();
+  }catch(e){}
+
+  stopEditing();
+
+  msg('تم حفظ المبنى محلياً وبقي ظاهراً على الخريطة');
+
+ }finally{
+  isSaving=false;
  }
-
- originalState=null;
- isExistingModel=true;
- editing=false;
-
- hideToolbar();
- requestRender();
-
- msg('تم حفظ المبنى محلياً وبقي ظاهراً على الخريطة');
 }
 
 function cancelModel(){
- if(!root)return;
+ if(!active)return;
 
- if(isExistingModel&&originalState){
-  restoreState(originalState);
-  editing=false;
-  hideToolbar();
+ const entry=active;
 
+ if(!isNewModel){
+  const state=originalState;
+
+  if(state){
+   entry.anchor={...state.anchor};
+   entry.group.rotation.y=state.rotation;
+   entry.group.scale.setScalar(state.scale);
+   entry.elevation=state.elevation;
+  }
+
+  stopEditing();
   msg('تم إلغاء التعديلات وإرجاع آخر نسخة محفوظة');
   return;
  }
 
- const id=blobId;
+ removeEntry(entry);
+ stopEditing();
 
- if(modelGroup){
-  modelGroup.remove(root);
- }
-
- root=null;
- anchor=null;
- blobId=null;
- modelName='';
- originalState=null;
- elevationMeters=0;
- isExistingModel=false;
- editing=false;
-
- hideToolbar();
- requestRender();
-
- if(id){
-  deleteStoredFile(id).catch(console.warn);
- }
+ deleteStoredFile(entry.fileId).catch(console.warn);
 
  msg('تم إلغاء النموذج');
 }
 
+// ---------------------------------------------------------------- التسميات والمفضلة
 function labelOpen(){
- close('menuSheet');
- open('labelSheet');
+ closeSheet('menuSheet');
+ openSheet('labelSheet');
 }
 
 function saveLabel(){
@@ -811,7 +1255,7 @@ function saveLabel(){
  });
 
  if(saveMeta()){
-  close('labelSheet');
+  closeSheet('labelSheet');
   msg('تم حفظ التسمية محلياً');
  }
 }
@@ -833,7 +1277,7 @@ function favorite(){
  });
 
  if(saveMeta()){
-  close('menuSheet');
+  closeSheet('menuSheet');
   msg('تم حفظ الموقع محلياً');
  }
 }
@@ -843,7 +1287,7 @@ function copyCoords(){
 
  const value=selected.lng+', '+selected.lat;
 
- if(navigator.clipboard?.writeText){
+ if(navigator.clipboard&&navigator.clipboard.writeText){
   navigator.clipboard.writeText(value)
    .then(()=>msg('تم نسخ الإحداثيات'))
    .catch(()=>msg(value));
@@ -851,7 +1295,7 @@ function copyCoords(){
   msg(value);
  }
 
- close('menuSheet');
+ closeSheet('menuSheet');
 }
 
 function esc(value){
@@ -864,6 +1308,7 @@ function esc(value){
  }[char]));
 }
 
+// ---------------------------------------------------------------- العناصر المحفوظة
 function savedOpen(){
  const box=document.getElementById('savedList');
 
@@ -878,7 +1323,53 @@ function savedOpen(){
   `).join('')
   :'<p>لا توجد عناصر محفوظة.</p>';
 
- open('savedSheet');
+ openSheet('savedSheet');
+}
+
+// تحميل مبنى محفوظ من IndexedDB وعرضه (إن لم يكن معروضاً).
+function loadSavedEntry(item){
+ if(placed.has(item.id))return Promise.resolve(placed.get(item.id));
+ if(loadingSaved.has(item.id))return loadingSaved.get(item.id);
+
+ const promise=(async()=>{
+  const stored=await readFileWithMigration(item.fileId);
+
+  if(!stored){
+   throw new Error('ملف النموذج غير موجود في تخزين هذا المتصفح');
+  }
+
+  const buffer=await toArrayBuffer(stored);
+
+  init3d();
+
+  const gltf=await parseGLB(buffer);
+
+  if(!gltf||!gltf.scene){
+   throw new Error('لم يتم العثور على مشهد داخل الملف');
+  }
+
+  const entry=createEntry({
+   id:item.id,
+   name:item.name,
+   fileId:item.fileId,
+   object:gltf.scene,
+   anchor:{lng:Number(item.lng),lat:Number(item.lat)},
+   elevation:Number(item.elevation)||0,
+   rotationY:(Number(item.rotation)||0)*Math.PI/180,
+   scale:Number(item.scale)||1,
+   legacy:item.v!==3
+  });
+
+  entry.persisted=true;
+  return entry;
+ })();
+
+ loadingSaved.set(item.id,promise);
+
+ const clear=()=>loadingSaved.delete(item.id);
+ promise.then(clear,clear);
+
+ return promise;
 }
 
 async function focusItem(id){
@@ -886,7 +1377,12 @@ async function focusItem(id){
 
  if(!item)return;
 
- close('savedSheet');
+ if(editing&&!(active&&active.id===id)){
+  msg('احفظ التعديل أو ألغِه أولاً');
+  return;
+ }
+
+ closeSheet('savedSheet');
 
  selected={lng:item.lng,lat:item.lat};
 
@@ -901,47 +1397,21 @@ async function focusItem(id){
  if(item.type!=='model')return;
 
  try{
-  const blob=await readFile(item.fileId);
+  const entry=await loadSavedEntry(item);
 
-  if(!blob){
-   throw new Error('ملف النموذج غير موجود في تخزين هذا المتصفح');
+  if(editing&&active===entry)return;
+
+  if(editing){
+   msg('احفظ التعديل أو ألغِه أولاً');
+   return;
   }
 
-  const buffer=await blob.arrayBuffer();
-
-  init3d();
-
-  const gltf=await parseGLB(buffer);
-  const loaded=normalizeModel(gltf.scene);
-
-  if(root&&modelGroup){
-   modelGroup.remove(root);
-  }
-
-  root=loaded;
-  modelGroup.add(root);
-
-  anchor={lng:item.lng,lat:item.lat};
-  blobId=item.fileId;
-  modelName=item.name;
-
-  root.scale.setScalar(Number(item.scale)||1);
-  root.rotation.y=(Number(item.rotation)||0)*Math.PI/180;
-
-  elevationMeters=Number(item.elevation)||0;
-
-  isExistingModel=true;
-  editing=true;
-  originalState=captureState();
-
-  setMode('move');
-  showToolbar();
-  requestRender();
-
+  startEditing(entry,false);
   msg('تم فتح المبنى المحفوظ');
 
  }catch(error){
   console.error(error);
+  dbg.lastError=String(error&&error.message||error);
   msg('تعذر فتح المبنى: '+(error.message||String(error)),6500);
  }
 }
@@ -951,9 +1421,21 @@ async function deleteItem(id){
 
  if(!item||!confirm('تأكيد الحذف؟'))return;
 
+ const previous=items;
+
  items=items.filter(entry=>entry.id!==id);
 
- if(!saveMeta())return;
+ if(!saveMeta()){
+  items=previous;
+  return;
+ }
+
+ const entry=placed.get(id);
+
+ if(entry){
+  if(active===entry)stopEditing();
+  removeEntry(entry);
+ }
 
  if(item.fileId){
   try{
@@ -963,113 +1445,155 @@ async function deleteItem(id){
   }
  }
 
- if(blobId===item.fileId){
-  cancelModel();
- }
-
  savedOpen();
 }
 
+// ---------------------------------------------------------------- أحداث الخريطة
 map.on('move',requestRender);
 map.on('zoom',requestRender);
 map.on('pitch',requestRender);
 map.on('rotate',requestRender);
 
+async function restoreSaved(){
+ if(needsMetaMigration){
+  if(saveMeta())needsMetaMigration=false;
+ }
+
+ const models=items.filter(item=>item&&item.type==='model'&&item.fileId);
+
+ if(!models.length)return;
+
+ let failed=0;
+
+ for(const item of models){
+  try{
+   await loadSavedEntry(item);
+  }catch(error){
+   failed++;
+   console.warn('restore',item.id,error);
+  }
+ }
+
+ if(failed)msg('تعذر عرض '+failed+' من المباني المحفوظة (الملف غير موجود في هذا المتصفح)',6000);
+
+ pruneOrphans();
+}
+
 map.on('load',()=>{
  try{
   init3d();
   requestRender();
+  restoreSaved();
  }catch(error){
   console.error(error);
   msg(error.message);
  }
 });
 
-function canvasPoint(event){
- const rect=map.getCanvas().getBoundingClientRect();
- return[event.clientX-rect.left,event.clientY-rect.top];
-}
-
-const mapCanvas=map.getCanvas();
-
-mapCanvas.addEventListener('pointerdown',event=>{
- if(!root||!anchor||!editing)return;
-
- if(event.pointerType==='mouse'&&event.button!==0)return;
-
- const point=canvasPoint(event);
- const modelPoint=map.project([anchor.lng,anchor.lat]);
-
- if(Math.hypot(point[0]-modelPoint.x,point[1]-modelPoint.y)>135)return;
-
- event.preventDefault();
- event.stopImmediatePropagation();
-
- map.dragPan.disable();
-
+// نصف قطر منطقة اللمس حول المبنى بالبكسل (يتغير مع التكبير وحجم المبنى).
+function hitRadius(entry){
  try{
-  mapCanvas.setPointerCapture(event.pointerId);
- }catch(error){}
+  const a=entry.anchor;
+  const halfMeters=Math.max(5,(entry.radius||35)*entry.group.scale.x);
+  const dLng=halfMeters/(111320*Math.max(0.05,Math.cos(a.lat*Math.PI/180)));
 
- dragState={
-  id:event.pointerId,
-  x:event.clientX,
-  y:event.clientY,
-  rotation:root.rotation.y*180/Math.PI
- };
-},{capture:true});
+  const p0=map.project([a.lng,a.lat]);
+  const p1=map.project([a.lng+dLng,a.lat]);
 
-mapCanvas.addEventListener('pointermove',event=>{
- if(!dragState||dragState.id!==event.pointerId)return;
-
- event.preventDefault();
- event.stopImmediatePropagation();
-
- if(mode==='move'){
-  const ll=map.unproject(canvasPoint(event));
-
-  anchor={lng:ll.lng,lat:ll.lat};
-
-  document.getElementById('coords').textContent='الموقع: '+fmt(anchor);
-
- }else if(mode==='rotate'){
-  root.rotation.y=
-   (dragState.rotation+(event.clientX-dragState.x)*0.7)*Math.PI/180;
+  return Math.min(160,Math.max(48,Math.hypot(p1.x-p0.x,p1.y-p0.y)*1.2));
+ }catch(error){
+  return 90;
  }
-
- requestRender();
-},{capture:true});
-
-function finishDrag(event){
- if(!dragState)return;
-
- event.preventDefault();
- event.stopImmediatePropagation();
-
- dragState=null;
- justDragged=true;
-
- map.dragPan.enable();
- requestRender();
 }
 
-mapCanvas.addEventListener('pointerup',finishDrag,{capture:true});
-mapCanvas.addEventListener('pointercancel',finishDrag,{capture:true});
+// السحب عبر أحداث MapLibre نفسها: e.preventDefault() يعطّل تحريك الخريطة
+// (يعمل مع touchstart على iPhone، بينما pointerdown لا يوقف أحداث اللمس).
+function startDrag(e){
+ if(!editing||!active)return;
 
-map.on('click',event=>{
- if(justDragged){
-  justDragged=false;
+ if(e.type==='mousedown'&&e.originalEvent&&e.originalEvent.button!==0)return;
+ if(e.points&&e.points.length>1)return;
+
+ const center=map.project([active.anchor.lng,active.anchor.lat]);
+
+ if(Math.hypot(e.point.x-center.x,e.point.y-center.y)>hitRadius(active))return;
+
+ e.preventDefault();
+
+ drag={
+  startX:e.point.x,
+  startY:e.point.y,
+  offX:center.x-e.point.x,
+  offY:center.y-e.point.y,
+  rotation:active.group.rotation.y
+ };
+
+ try{map.dragPan.disable();}catch(err){}
+}
+
+function moveDrag(e){
+ if(!drag||!active)return;
+
+ if(e.points&&e.points.length>1){
+  endDrag();
   return;
  }
 
+ if(mode==='move'){
+  const ll=map.unproject([e.point.x+drag.offX,e.point.y+drag.offY]);
+
+  active.anchor={lng:ll.lng,lat:ll.lat};
+  selected={...active.anchor};
+
+  document.getElementById('coords').textContent='الموقع: '+fmt(active.anchor);
+
+ }else if(mode==='rotate'){
+  active.group.rotation.y=drag.rotation-(e.point.x-drag.startX)*0.7*Math.PI/180;
+ }
+
+ requestRender();
+}
+
+function endDrag(){
+ if(!drag)return;
+
+ drag=null;
+ try{map.dragPan.enable();}catch(err){}
+ lastDragEnd=Date.now();
+ requestRender();
+}
+
+map.on('mousedown',startDrag);
+map.on('touchstart',startDrag);
+map.on('mousemove',moveDrag);
+map.on('touchmove',moveDrag);
+map.on('mouseup',endDrag);
+map.on('touchend',endDrag);
+map.on('touchcancel',endDrag);
+
+window.addEventListener('mouseup',()=>endDrag());
+window.addEventListener('touchend',()=>endDrag());
+window.addEventListener('touchcancel',()=>endDrag());
+
+// منع تمرير الصفحة أو تكبيرها بالإصبع أثناء سحب المبنى على Safari.
+map.getCanvas().addEventListener('touchmove',event=>{
+ if(drag)event.preventDefault();
+},{passive:false});
+
+document.addEventListener('gesturestart',event=>event.preventDefault());
+
+map.on('click',event=>{
+ // اللمسة الأخيرة من السحب تولّد click، نتجاهلها.
+ if(Date.now()-lastDragEnd<450)return;
+
  const point=event.lngLat;
 
- if(root&&editing){
+ if(editing&&active){
   if(mode==='move'){
-   anchor={lng:point.lng,lat:point.lat};
-   selected={...anchor};
+   active.anchor={lng:point.lng,lat:point.lat};
+   selected={...active.anchor};
 
-   document.getElementById('coords').textContent='الموقع: '+fmt(anchor);
+   document.getElementById('coords').textContent='الموقع: '+fmt(active.anchor);
 
    requestRender();
    msg('تم نقل المبنى إلى الموقع الجديد');
@@ -1081,8 +1605,12 @@ map.on('click',event=>{
  choose(point,false);
 });
 
+window.addEventListener('resize',()=>map.resize());
+window.addEventListener('orientationchange',()=>setTimeout(()=>map.resize(),350));
+
 window.addEventListener('error',event=>{
  console.error('Page error:',event.error||event.message);
+ dbg.lastError=String(event.message||'');
 
  if(isLoading){
   msg('حدث خطأ أثناء تحميل النموذج: '+(event.message||'خطأ غير معروف'),6500);
