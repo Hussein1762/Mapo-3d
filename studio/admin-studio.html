@@ -64,7 +64,7 @@ input{width:100%;padding:12px;border-radius:10px;border:1px solid #50617a;backgr
 <div id="map"></div>
 
 <div id="editToolbar">
- <div class="toolbarHint" id="toolbarHint">اضغط على أي مكان بالخريطة لنقل المبنى إليه، أو اسحبه</div>
+ <div class="toolbarHint" id="toolbarHint">اضغط على أي مكان بالخريطة لنقل المبنى إليه، أو اسحبه من مركزه</div>
  <div class="toolrow">
   <button id="tbMove" class="active" onclick="setMode('move')">✥ تحريك</button>
   <button id="tbRotate" onclick="setMode('rotate')">↻ تدوير</button>
@@ -113,7 +113,7 @@ input{width:100%;padding:12px;border-radius:10px;border:1px solid #50617a;backgr
 <div class="scrim" id="uploadSheet" onclick="back(event,'uploadSheet')">
 <section class="sheet">
 <h3>رفع نموذج المبنى</h3>
-<p>اختر ملف GLB. الملفات الكبيرة قد تستغرق وقتاً أطول حسب الجهاز.</p>
+<p>اختر ملف GLB. الحد الأقصى 250MB.</p>
 <label class="field" for="file">ملف 3D</label>
 <input id="file" type="file" accept=".glb,model/gltf-binary">
 <label class="field" for="name">اسم المبنى</label>
@@ -149,6 +149,7 @@ input{width:100%;padding:12px;border-radius:10px;border:1px solid #50617a;backgr
 
 const KEY='mapo_studio_glb_v2';
 const DB='mapo_glb_files_v2';
+const DEFAULT_FOOTPRINT_METERS=70;
 
 let items=[];
 try{
@@ -229,7 +230,7 @@ map.on('style.load',()=>{
  if(rtlReady)applyArabicLabels();
 });
 
-function msg(s,ms=3200){
+function msg(s,ms=3500){
  const e=document.getElementById('toast');
  e.textContent=s;
  e.style.display='block';
@@ -265,10 +266,8 @@ function fmt(p){
 
 function choose(ll,show=true){
  selected={lng:ll.lng,lat:ll.lat};
-
  document.getElementById('coords').textContent='الموقع: '+fmt(selected);
  document.getElementById('placeText').textContent='الإحداثيات: '+fmt(selected);
-
  if(show)open('menuSheet');
 }
 
@@ -287,18 +286,11 @@ function menu(){
 }
 
 function world(){
- map.flyTo({
-  center:[0,18],
-  zoom:1.55,
-  pitch:0,
-  bearing:0
- });
+ map.flyTo({center:[0,18],zoom:1.55,pitch:0,bearing:0});
 }
 
 function tilt(){
- map.easeTo({
-  pitch:map.getPitch()>20?0:55
- });
+ map.easeTo({pitch:map.getPitch()>20?0:55});
 }
 
 function uploadOpen(){
@@ -317,83 +309,83 @@ function uploadOpen(){
 }
 
 function dbOpen(){
- return new Promise((res,rej)=>{
-  const r=indexedDB.open(DB,1);
+ return new Promise((resolve,reject)=>{
+  const request=indexedDB.open(DB,1);
 
-  r.onupgradeneeded=()=>{
-   if(!r.result.objectStoreNames.contains('files')){
-    r.result.createObjectStore('files',{keyPath:'id'});
+  request.onupgradeneeded=()=>{
+   if(!request.result.objectStoreNames.contains('files')){
+    request.result.createObjectStore('files',{keyPath:'id'});
    }
   };
 
-  r.onsuccess=()=>res(r.result);
-  r.onerror=()=>rej(r.error||new Error('تعذر فتح قاعدة الملفات'));
+  request.onsuccess=()=>resolve(request.result);
+  request.onerror=()=>reject(request.error||new Error('تعذر فتح قاعدة الملفات'));
  });
 }
 
 async function storeFile(id,blob){
- const d=await dbOpen();
+ const db=await dbOpen();
 
- return new Promise((res,rej)=>{
-  const t=d.transaction('files','readwrite');
-  t.objectStore('files').put({id,blob});
+ return new Promise((resolve,reject)=>{
+  const tx=db.transaction('files','readwrite');
+  tx.objectStore('files').put({id,blob});
 
-  t.oncomplete=()=>{
-   d.close();
-   res();
+  tx.oncomplete=()=>{
+   db.close();
+   resolve();
   };
 
-  t.onerror=()=>{
-   const e=t.error;
-   d.close();
-   rej(e||new Error('فشل تخزين الملف'));
+  tx.onerror=()=>{
+   const err=tx.error;
+   db.close();
+   reject(err||new Error('فشل تخزين الملف'));
   };
 
-  t.onabort=()=>{
-   const e=t.error;
-   d.close();
-   rej(e||new Error('تم إلغاء تخزين الملف'));
+  tx.onabort=()=>{
+   const err=tx.error;
+   db.close();
+   reject(err||new Error('تم إلغاء التخزين'));
   };
  });
 }
 
 async function readFile(id){
- const d=await dbOpen();
+ const db=await dbOpen();
 
- return new Promise((res,rej)=>{
-  const t=d.transaction('files','readonly');
-  const r=t.objectStore('files').get(id);
+ return new Promise((resolve,reject)=>{
+  const tx=db.transaction('files','readonly');
+  const request=tx.objectStore('files').get(id);
 
-  r.onsuccess=()=>{
-   const value=r.result?.blob;
-   d.close();
-   res(value);
+  request.onsuccess=()=>{
+   const blob=request.result?.blob;
+   db.close();
+   resolve(blob);
   };
 
-  r.onerror=()=>{
-   const e=r.error;
-   d.close();
-   rej(e||new Error('تعذر قراءة الملف'));
+  request.onerror=()=>{
+   const err=request.error;
+   db.close();
+   reject(err||new Error('تعذر قراءة الملف'));
   };
  });
 }
 
 async function deleteStoredFile(id){
- const d=await dbOpen();
+ const db=await dbOpen();
 
- return new Promise((res,rej)=>{
-  const t=d.transaction('files','readwrite');
-  t.objectStore('files').delete(id);
+ return new Promise((resolve,reject)=>{
+  const tx=db.transaction('files','readwrite');
+  tx.objectStore('files').delete(id);
 
-  t.oncomplete=()=>{
-   d.close();
-   res();
+  tx.oncomplete=()=>{
+   db.close();
+   resolve();
   };
 
-  t.onerror=()=>{
-   const e=t.error;
-   d.close();
-   rej(e);
+  tx.onerror=()=>{
+   const err=tx.error;
+   db.close();
+   reject(err);
   };
  });
 }
@@ -402,15 +394,15 @@ function init3d(){
  if(scene)return;
 
  if(!window.THREE||!THREE.GLTFLoader){
-  throw new Error('مكتبة Three.js أو GLTFLoader لم يتم تحميلها. حدّث الصفحة وتأكد من الاتصال بالإنترنت.');
+  throw new Error('مكتبات Three.js لم يتم تحميلها. تحقق من الإنترنت ثم حدّث الصفحة.');
  }
 
  scene=new THREE.Scene();
  camera=new THREE.Camera();
 
- scene.add(new THREE.HemisphereLight(0xffffff,0x6b7280,1.8));
+ scene.add(new THREE.HemisphereLight(0xffffff,0x777777,1.7));
 
- const sun=new THREE.DirectionalLight(0xffffff,2);
+ const sun=new THREE.DirectionalLight(0xffffff,2.0);
  sun.position.set(-80,120,80);
  scene.add(sun);
 
@@ -430,30 +422,40 @@ function init3d(){
    });
 
    renderer.autoClear=false;
-
-   if('outputEncoding'in renderer&&THREE.sRGBEncoding){
-    renderer.outputEncoding=THREE.sRGBEncoding;
-   }
+   renderer.outputColorSpace=THREE.SRGBColorSpace;
   },
 
   render:function(gl,matrix){
    if(!renderer||!root||!anchor)return;
 
-   const mc=maplibregl.MercatorCoordinate.fromLngLat(
+   const mercator=maplibregl.MercatorCoordinate.fromLngLat(
     [anchor.lng,anchor.lat],
     elevationMeters
    );
 
-   const meter=mc.meterInMercatorCoordinateUnits();
-   const projection=new THREE.Matrix4().fromArray(matrix);
+   const meterScale=mercator.meterInMercatorCoordinateUnits();
+   const mapMatrix=new THREE.Matrix4().fromArray(matrix);
 
-   const modelMatrix=new THREE.Matrix4()
-    .makeTranslation(mc.x,mc.y,mc.z)
-    .multiply(new THREE.Matrix4().makeRotationX(Math.PI/2))
-    .multiply(new THREE.Matrix4().makeScale(meter,-meter,meter));
+   const translate=new THREE.Matrix4().makeTranslation(
+    mercator.x,mercator.y,mercator.z
+   );
 
-   camera.projectionMatrix.copy(projection).multiply(modelMatrix);
-   camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
+   const rotate=new THREE.Matrix4().makeRotationX(Math.PI/2);
+
+   const scale=new THREE.Matrix4().makeScale(
+    meterScale,-meterScale,meterScale
+   );
+
+   // ترتيب التحويل المستخدم لربط Three.js بإحداثيات MapLibre.
+   camera.projectionMatrix
+    .copy(mapMatrix)
+    .multiply(translate)
+    .multiply(rotate)
+    .multiply(scale);
+
+   camera.projectionMatrixInverse
+    .copy(camera.projectionMatrix)
+    .invert();
 
    renderer.resetState();
    renderer.render(scene,camera);
@@ -477,17 +479,42 @@ function requestRender(){
  if(map)map.triggerRepaint();
 }
 
-function fit(obj){
- const bounds=new THREE.Box3().setFromObject(obj);
+// توحيد وحدات النموذج ووضع قاعدته على الأرض.
+function normalizeModel(object,targetMeters=DEFAULT_FOOTPRINT_METERS){
+ object.updateMatrixWorld(true);
 
- if(bounds.isEmpty())return;
+ let bounds=new THREE.Box3().setFromObject(object);
+
+ if(bounds.isEmpty()){
+  throw new Error('النموذج لا يحتوي على مجسمات ثلاثية الأبعاد ظاهرة');
+ }
+
+ const size=bounds.getSize(new THREE.Vector3());
+ const horizontal=Math.max(size.x,size.z);
+
+ if(!Number.isFinite(horizontal)||horizontal<0.000001){
+  throw new Error('أبعاد النموذج غير صالحة');
+ }
+
+ const factor=targetMeters/horizontal;
+
+ object.scale.multiplyScalar(factor);
+ object.updateMatrixWorld(true);
+
+ bounds=new THREE.Box3().setFromObject(object);
 
  const center=bounds.getCenter(new THREE.Vector3());
- const minY=bounds.min.y;
 
- obj.position.x-=center.x;
- obj.position.z-=center.z;
- obj.position.y-=minY;
+ object.position.x-=center.x;
+ object.position.z-=center.z;
+ object.position.y-=bounds.min.y;
+
+ object.updateMatrixWorld(true);
+
+ const wrapper=new THREE.Group();
+ wrapper.add(object);
+
+ return wrapper;
 }
 
 function setMode(next){
@@ -498,7 +525,7 @@ function setMode(next){
 
  document.getElementById('toolbarHint').textContent=
   mode==='move'
-   ?'اضغط على أي مكان بالخريطة لنقل المبنى إليه، أو اسحبه'
+   ?'اضغط على أي مكان بالخريطة لنقل المبنى، أو اسحبه من مركزه'
    :'اسحب يميناً أو يساراً لتدوير المبنى';
 }
 
@@ -510,28 +537,13 @@ function hideToolbar(){
  document.getElementById('editToolbar').style.display='none';
 }
 
-function elevation(n){
- elevationMeters=Math.max(0,Math.min(100,Number(n)||0));
- requestRender();
-}
-
 function elevBy(n){
- elevation(elevationMeters+n);
-}
-
-function rotation(v){
- if(root)root.rotation.y=Number(v)*Math.PI/180;
- requestRender();
-}
-
-function scaling(v){
- if(root)root.scale.setScalar(Number(v));
+ elevationMeters=Math.max(0,Math.min(100,elevationMeters+n));
  requestRender();
 }
 
 function turn(n){
  if(!root)return;
-
  root.rotation.y+=n*Math.PI/180;
  requestRender();
 }
@@ -541,6 +553,7 @@ function scaleBy(n){
 
  const next=Math.max(.1,Math.min(10,root.scale.x+n));
  root.scale.setScalar(next);
+
  requestRender();
 }
 
@@ -555,13 +568,13 @@ function captureState(){
  };
 }
 
-function restoreState(s){
- if(!s||!root)return;
+function restoreState(state){
+ if(!state||!root)return;
 
- anchor={...s.position};
- root.rotation.y=s.rotation;
- root.scale.setScalar(s.scale);
- elevationMeters=s.elevation;
+ anchor={...state.position};
+ root.rotation.y=state.rotation;
+ root.scale.setScalar(state.scale);
+ elevationMeters=state.elevation;
 
  requestRender();
 }
@@ -572,11 +585,11 @@ function parseGLB(buffer){
    new THREE.GLTFLoader().parse(
     buffer,
     '',
-    g=>resolve(g),
-    e=>reject(e||new Error('GLB parse failed'))
+    resolve,
+    error=>reject(error||new Error('تعذر تحليل ملف GLB'))
    );
-  }catch(e){
-   reject(e);
+  }catch(error){
+   reject(error);
   }
  });
 }
@@ -584,14 +597,14 @@ function parseGLB(buffer){
 async function loadModel(){
  if(isLoading)return;
 
- const f=document.getElementById('file').files?.[0];
+ const file=document.getElementById('file').files?.[0];
 
- if(!f){
+ if(!file){
   msg('اختَر ملف GLB أولاً');
   return;
  }
 
- if(!f.name.toLowerCase().endsWith('.glb')){
+ if(!file.name.toLowerCase().endsWith('.glb')){
   msg('الملف لازم يكون بصيغة GLB');
   return;
  }
@@ -601,35 +614,35 @@ async function loadModel(){
   return;
  }
 
- if(f.size===0){
+ if(!file.size){
   msg('الملف فارغ');
   return;
  }
 
- if(f.size>250*1024*1024){
-  msg('حجم الملف أكبر من الحد المسموح (250MB)');
+ if(file.size>250*1024*1024){
+  msg('حجم الملف أكبر من 250MB');
   return;
  }
 
  isLoading=true;
 
- const btn=document.getElementById('uploadBtn');
- btn.disabled=true;
- btn.textContent='جاري التحميل...';
+ const button=document.getElementById('uploadBtn');
+ button.disabled=true;
+ button.textContent='جاري التحميل...';
 
  document.getElementById('uploadSheet').classList.add('busy');
- msg('جاري قراءة ملف النموذج...',12000);
+ msg('جاري قراءة ملف النموذج...',15000);
+
+ let storedId=null;
 
  try{
-  const buffer=await f.arrayBuffer();
+  const buffer=await file.arrayBuffer();
 
   if(buffer.byteLength<12){
    throw new Error('الملف صغير أو غير مكتمل');
   }
 
-  const magic=new DataView(buffer).getUint32(0,true);
-
-  if(magic!==0x46546c67){
+  if(new DataView(buffer).getUint32(0,true)!==0x46546c67){
    throw new Error('محتوى الملف ليس GLB صالحاً');
   }
 
@@ -637,23 +650,18 @@ async function loadModel(){
 
   const gltf=await parseGLB(buffer);
 
-  if(!gltf?.scene){
-   throw new Error('لم يعثر القارئ على مشهد داخل الملف');
+  if(!gltf||!gltf.scene){
+   throw new Error('لم يتم العثور على مشهد داخل الملف');
   }
 
-  const newRoot=gltf.scene;
-  fit(newRoot);
+  const newRoot=normalizeModel(gltf.scene);
 
-  const newId='glb_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
+  storedId='glb_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
 
-  try{
-   await storeFile(
-    newId,
-    new Blob([buffer],{type:'model/gltf-binary'})
-   );
-  }catch(storageError){
-   throw new Error('تمت قراءة النموذج لكن تعذر حفظ نسخة محلية منه: '+(storageError.message||'مساحة التخزين'));
-  }
+  await storeFile(
+   storedId,
+   new Blob([buffer],{type:'model/gltf-binary'})
+  );
 
   if(root&&modelGroup){
    modelGroup.remove(root);
@@ -663,42 +671,46 @@ async function loadModel(){
   modelGroup.add(root);
 
   anchor={...selected};
-  blobId=newId;
-  isExistingModel=false;
-  editing=true;
+  blobId=storedId;
 
   modelName=document.getElementById('name').value.trim()||
-   f.name.replace(/\.glb$/i,'');
+   file.name.replace(/\.glb$/i,'');
 
   elevationMeters=0;
-  root.rotation.set(0,0,0);
-  root.scale.setScalar(1);
-
+  isExistingModel=false;
+  editing=true;
   originalState=captureState();
 
   setMode('move');
 
+  close('uploadSheet');
+
   map.flyTo({
    center:[anchor.lng,anchor.lat],
-   zoom:17,
+   zoom:18,
    pitch:55,
    duration:900
   });
 
-  close('uploadSheet');
   showToolbar();
   requestRender();
 
-  msg('تم تحميل النموذج. تقدر تعدّل مكانه وحجمه واتجاهه.');
+  msg('تم تحميل النموذج. اضغط على أي مكان بالخريطة لنقله.');
 
- }catch(e){
-  console.error('GLB load error:',e);
-  msg('فشل تحميل النموذج: '+(e?.message||String(e)),6500);
+ }catch(error){
+  console.error('GLB load failed:',error);
+
+  if(storedId){
+   deleteStoredFile(storedId).catch(()=>{});
+  }
+
+  msg('فشل تحميل النموذج: '+(error?.message||String(error)),7000);
 
  }finally{
   isLoading=false;
-  btn.disabled=false;
-  btn.textContent='رفع وعرض المبنى';
+  button.disabled=false;
+  button.textContent='رفع وعرض المبنى';
+
   document.getElementById('uploadSheet').classList.remove('busy');
  }
 }
@@ -722,13 +734,13 @@ function saveDraft(){
   status:'draft'
  };
 
- const old=items;
+ const previous=items;
 
- items=items.filter(x=>x.id!==blobId);
+ items=items.filter(item=>item.id!==blobId);
  items.push(record);
 
  if(!saveMeta()){
-  items=old;
+  items=previous;
   return;
  }
 
@@ -739,7 +751,7 @@ function saveDraft(){
  hideToolbar();
  requestRender();
 
- msg('تم حفظ المبنى وبقي ظاهراً على الخريطة بهذا الجهاز');
+ msg('تم حفظ المبنى محلياً وبقي ظاهراً على الخريطة');
 }
 
 function cancelModel(){
@@ -750,7 +762,7 @@ function cancelModel(){
   editing=false;
   hideToolbar();
 
-  msg('تم إلغاء التعديلات وإرجاع المبنى إلى آخر نسخة محفوظة');
+  msg('تم إلغاء التعديلات وإرجاع آخر نسخة محفوظة');
   return;
  }
 
@@ -773,7 +785,7 @@ function cancelModel(){
  requestRender();
 
  if(id){
-  deleteStoredFile(id).catch(e=>console.warn('temporary model cleanup:',e));
+  deleteStoredFile(id).catch(console.warn);
  }
 
  msg('تم إلغاء النموذج');
@@ -785,14 +797,14 @@ function labelOpen(){
 }
 
 function saveLabel(){
- const n=document.getElementById('label').value.trim();
+ const name=document.getElementById('label').value.trim();
 
- if(!n||!selected)return;
+ if(!name||!selected)return;
 
  items.push({
   id:'label_'+Date.now(),
   type:'label',
-  name:n,
+  name,
   lng:selected.lng,
   lat:selected.lat,
   status:'draft'
@@ -807,14 +819,14 @@ function saveLabel(){
 function favorite(){
  if(!selected)return;
 
- const n=prompt('اسم الموقع','موقع محفوظ');
+ const name=prompt('اسم الموقع','موقع محفوظ');
 
- if(n===null)return;
+ if(name===null)return;
 
  items.push({
   id:'fav_'+Date.now(),
   type:'favorite',
-  name:n,
+  name,
   lng:selected.lng,
   lat:selected.lat,
   status:'draft'
@@ -829,39 +841,39 @@ function favorite(){
 function copyCoords(){
  if(!selected)return;
 
- const s=selected.lng+', '+selected.lat;
+ const value=selected.lng+', '+selected.lat;
 
  if(navigator.clipboard?.writeText){
-  navigator.clipboard.writeText(s)
+  navigator.clipboard.writeText(value)
    .then(()=>msg('تم نسخ الإحداثيات'))
-   .catch(()=>msg(s));
+   .catch(()=>msg(value));
  }else{
-  msg(s);
+  msg(value);
  }
 
  close('menuSheet');
 }
 
-function esc(s){
- return String(s).replace(/[&<>"']/g,c=>({
+function esc(value){
+ return String(value).replace(/[&<>"']/g,char=>({
   '&':'&amp;',
   '<':'&lt;',
   '>':'&gt;',
   '"':'&quot;',
   "'":'&#39;'
- }[c]));
+ }[char]));
 }
 
 function savedOpen(){
- const b=document.getElementById('savedList');
+ const box=document.getElementById('savedList');
 
- b.innerHTML=items.length
-  ?items.map(x=>`
+ box.innerHTML=items.length
+  ?items.map(item=>`
    <div class="saved">
-    <b>${esc(x.name)}</b><br>
-    <small>${esc(x.type)} · ${esc(x.status||'draft')} · ${Number(x.lat).toFixed(5)}, ${Number(x.lng).toFixed(5)}</small><br>
-    <button class="btn alt" onclick="focusItem('${esc(x.id)}')">عرض</button>
-    <button class="btn alt" onclick="deleteItem('${esc(x.id)}')">حذف</button>
+    <b>${esc(item.name)}</b><br>
+    <small>${esc(item.type)} · ${esc(item.status||'draft')} · ${Number(item.lat).toFixed(5)}, ${Number(item.lng).toFixed(5)}</small><br>
+    <button class="btn alt" onclick="focusItem('${esc(item.id)}')">عرض</button>
+    <button class="btn alt" onclick="deleteItem('${esc(item.id)}')">حذف</button>
    </div>
   `).join('')
   :'<p>لا توجد عناصر محفوظة.</p>';
@@ -870,29 +882,29 @@ function savedOpen(){
 }
 
 async function focusItem(id){
- const x=items.find(a=>a.id===id);
+ const item=items.find(entry=>entry.id===id);
 
- if(!x)return;
+ if(!item)return;
 
  close('savedSheet');
 
- selected={lng:x.lng,lat:x.lat};
+ selected={lng:item.lng,lat:item.lat};
 
  document.getElementById('coords').textContent='الموقع: '+fmt(selected);
 
  map.flyTo({
-  center:[x.lng,x.lat],
-  zoom:17,
+  center:[item.lng,item.lat],
+  zoom:18,
   pitch:50
  });
 
- if(x.type!=='model')return;
+ if(item.type!=='model')return;
 
  try{
-  const blob=await readFile(x.fileId);
+  const blob=await readFile(item.fileId);
 
   if(!blob){
-   throw new Error('الملف غير موجود في التخزين المحلي لهذا المتصفح');
+   throw new Error('ملف النموذج غير موجود في تخزين هذا المتصفح');
   }
 
   const buffer=await blob.arrayBuffer();
@@ -900,25 +912,26 @@ async function focusItem(id){
   init3d();
 
   const gltf=await parseGLB(buffer);
+  const loaded=normalizeModel(gltf.scene);
 
   if(root&&modelGroup){
    modelGroup.remove(root);
   }
 
-  root=gltf.scene;
-  fit(root);
+  root=loaded;
   modelGroup.add(root);
 
-  anchor={lng:x.lng,lat:x.lat};
-  blobId=x.fileId;
+  anchor={lng:item.lng,lat:item.lat};
+  blobId=item.fileId;
+  modelName=item.name;
+
+  root.scale.setScalar(Number(item.scale)||1);
+  root.rotation.y=(Number(item.rotation)||0)*Math.PI/180;
+
+  elevationMeters=Number(item.elevation)||0;
+
   isExistingModel=true;
   editing=true;
-  modelName=x.name;
-
-  root.scale.setScalar(Number(x.scale)||1);
-  root.rotation.y=(Number(x.rotation)||0)*Math.PI/180;
-
-  elevationMeters=Number(x.elevation)||0;
   originalState=captureState();
 
   setMode('move');
@@ -927,30 +940,30 @@ async function focusItem(id){
 
   msg('تم فتح المبنى المحفوظ');
 
- }catch(e){
-  console.error('Open saved model:',e);
-  msg('تعذر فتح المبنى: '+(e.message||String(e)),6000);
+ }catch(error){
+  console.error(error);
+  msg('تعذر فتح المبنى: '+(error.message||String(error)),6500);
  }
 }
 
 async function deleteItem(id){
- const x=items.find(a=>a.id===id);
+ const item=items.find(entry=>entry.id===id);
 
- if(!x||!confirm('تأكيد الحذف؟'))return;
+ if(!item||!confirm('تأكيد الحذف؟'))return;
 
- items=items.filter(a=>a.id!==id);
+ items=items.filter(entry=>entry.id!==id);
 
  if(!saveMeta())return;
 
- if(x.fileId){
+ if(item.fileId){
   try{
-   await deleteStoredFile(x.fileId);
-  }catch(e){
-   console.warn(e);
+   await deleteStoredFile(item.fileId);
+  }catch(error){
+   console.warn(error);
   }
  }
 
- if(blobId===x.fileId){
+ if(blobId===item.fileId){
   cancelModel();
  }
 
@@ -966,54 +979,54 @@ map.on('load',()=>{
  try{
   init3d();
   requestRender();
- }catch(e){
-  console.error(e);
-  msg(e.message);
+ }catch(error){
+  console.error(error);
+  msg(error.message);
  }
 });
 
-function canvasPoint(e){
- const r=map.getCanvas().getBoundingClientRect();
- return[e.clientX-r.left,e.clientY-r.top];
+function canvasPoint(event){
+ const rect=map.getCanvas().getBoundingClientRect();
+ return[event.clientX-rect.left,event.clientY-rect.top];
 }
 
 const mapCanvas=map.getCanvas();
 
-mapCanvas.addEventListener('pointerdown',e=>{
+mapCanvas.addEventListener('pointerdown',event=>{
  if(!root||!anchor||!editing)return;
 
- if(e.pointerType==='mouse'&&e.button!==0)return;
+ if(event.pointerType==='mouse'&&event.button!==0)return;
 
- const p=canvasPoint(e);
- const mp=map.project([anchor.lng,anchor.lat]);
+ const point=canvasPoint(event);
+ const modelPoint=map.project([anchor.lng,anchor.lat]);
 
- if(Math.hypot(p[0]-mp.x,p[1]-mp.y)>125)return;
+ if(Math.hypot(point[0]-modelPoint.x,point[1]-modelPoint.y)>135)return;
 
- e.preventDefault();
- e.stopImmediatePropagation();
+ event.preventDefault();
+ event.stopImmediatePropagation();
 
  map.dragPan.disable();
 
  try{
-  mapCanvas.setPointerCapture(e.pointerId);
- }catch(_){}
+  mapCanvas.setPointerCapture(event.pointerId);
+ }catch(error){}
 
  dragState={
-  id:e.pointerId,
-  x:e.clientX,
-  y:e.clientY,
+  id:event.pointerId,
+  x:event.clientX,
+  y:event.clientY,
   rotation:root.rotation.y*180/Math.PI
  };
 },{capture:true});
 
-mapCanvas.addEventListener('pointermove',e=>{
- if(!dragState||dragState.id!==e.pointerId)return;
+mapCanvas.addEventListener('pointermove',event=>{
+ if(!dragState||dragState.id!==event.pointerId)return;
 
- e.preventDefault();
- e.stopImmediatePropagation();
+ event.preventDefault();
+ event.stopImmediatePropagation();
 
  if(mode==='move'){
-  const ll=map.unproject(canvasPoint(e));
+  const ll=map.unproject(canvasPoint(event));
 
   anchor={lng:ll.lng,lat:ll.lat};
 
@@ -1021,17 +1034,17 @@ mapCanvas.addEventListener('pointermove',e=>{
 
  }else if(mode==='rotate'){
   root.rotation.y=
-   (dragState.rotation+(e.clientX-dragState.x)*.7)*Math.PI/180;
+   (dragState.rotation+(event.clientX-dragState.x)*0.7)*Math.PI/180;
  }
 
  requestRender();
 },{capture:true});
 
-function finishDirectDrag(e){
+function finishDrag(event){
  if(!dragState)return;
 
- e.preventDefault();
- e.stopImmediatePropagation();
+ event.preventDefault();
+ event.stopImmediatePropagation();
 
  dragState=null;
  justDragged=true;
@@ -1040,20 +1053,20 @@ function finishDirectDrag(e){
  requestRender();
 }
 
-mapCanvas.addEventListener('pointerup',finishDirectDrag,{capture:true});
-mapCanvas.addEventListener('pointercancel',finishDirectDrag,{capture:true});
+mapCanvas.addEventListener('pointerup',finishDrag,{capture:true});
+mapCanvas.addEventListener('pointercancel',finishDrag,{capture:true});
 
-mapCanvas.addEventListener('click',e=>{
+map.on('click',event=>{
  if(justDragged){
   justDragged=false;
   return;
  }
 
- const ll=map.unproject(canvasPoint(e));
+ const point=event.lngLat;
 
  if(root&&editing){
   if(mode==='move'){
-   anchor={lng:ll.lng,lat:ll.lat};
+   anchor={lng:point.lng,lat:point.lat};
    selected={...anchor};
 
    document.getElementById('coords').textContent='الموقع: '+fmt(anchor);
@@ -1065,14 +1078,14 @@ mapCanvas.addEventListener('click',e=>{
   return;
  }
 
- choose(ll,false);
+ choose(point,false);
 });
 
-window.addEventListener('error',e=>{
- console.error('Page error:',e.error||e.message);
+window.addEventListener('error',event=>{
+ console.error('Page error:',event.error||event.message);
 
  if(isLoading){
-  msg('حدث خطأ أثناء تحميل النموذج: '+(e.message||'خطأ غير معروف'),6500);
+  msg('حدث خطأ أثناء تحميل النموذج: '+(event.message||'خطأ غير معروف'),6500);
  }
 });
 </script>
