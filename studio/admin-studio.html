@@ -51,6 +51,7 @@ input{width:100%;padding:12px;border-radius:10px;border:1px solid #50617a;backgr
 </style>
 </head>
 <body>
+
 <header>
 <b>🌍 Mapo 3D Studio</b>
 <div>
@@ -61,8 +62,9 @@ input{width:100%;padding:12px;border-radius:10px;border:1px solid #50617a;backgr
 
 <div id="mapwrap">
 <div id="map"></div>
+
 <div id="editToolbar">
- <div class="toolbarHint" id="toolbarHint">اسحب قرب مركز المبنى لتحريك موقعه</div>
+ <div class="toolbarHint" id="toolbarHint">اضغط على أي مكان بالخريطة لنقل المبنى إليه، أو اسحبه</div>
  <div class="toolrow">
   <button id="tbMove" class="active" onclick="setMode('move')">✥ تحريك</button>
   <button id="tbRotate" onclick="setMode('rotate')">↻ تدوير</button>
@@ -102,7 +104,9 @@ input{width:100%;padding:12px;border-radius:10px;border:1px solid #50617a;backgr
 <button class="choice" onclick="favorite()"><b>⭐ حفظ الموقع</b><small>إضافة للمفضلة</small></button>
 <button class="choice" onclick="copyCoords()"><b>🧭 نسخ الإحداثيات</b><small>نسخ الموقع</small></button>
 </div>
-<div class="bar"><button class="btn alt" onclick="close('menuSheet')">إغلاق</button></div>
+<div class="bar">
+<button class="btn alt" onclick="close('menuSheet')">إغلاق</button>
+</div>
 </section>
 </div>
 
@@ -152,10 +156,25 @@ try{
  if(!Array.isArray(items))items=[];
 }catch(e){items=[];}
 
-let selected=null,root=null,scene=null,camera=null,renderer=null;
-let anchor=null,blobId=null,modelName='',modelGroup=null,modelLayer=null;
-let mode='move',dragState=null,justDragged=false;
-let elevationMeters=0,originalState=null,isLoading=false,isExistingModel=false;
+let selected=null;
+let root=null;
+let scene=null;
+let camera=null;
+let renderer=null;
+let anchor=null;
+let blobId=null;
+let modelName='';
+let modelGroup=null;
+let modelLayer=null;
+
+let mode='move';
+let dragState=null;
+let justDragged=false;
+let elevationMeters=0;
+let originalState=null;
+let isLoading=false;
+let isExistingModel=false;
+let editing=false;
 
 const map=new maplibregl.Map({
  container:'map',
@@ -181,12 +200,16 @@ try{
   },
   true
  );
-}catch(err){console.warn('RTL plugin unavailable',err);}
+}catch(err){
+ console.warn('RTL plugin unavailable',err);
+}
 
 function applyArabicLabels(){
  if(!map.isStyleLoaded())return;
+
  for(const layer of map.getStyle().layers||[]){
   if(layer.type!=='symbol'||!layer.layout?.['text-field'])continue;
+
   try{
    map.setLayoutProperty(layer.id,'text-field',[
     'coalesce',
@@ -194,8 +217,11 @@ function applyArabicLabels(){
     ['get','name_ar'],
     ['get','name']
    ]);
+
    map.setLayoutProperty(layer.id,'text-justify','auto');
-  }catch(e){console.warn('Arabic label',layer.id,e);}
+  }catch(e){
+   console.warn('Arabic label',layer.id,e);
+  }
  }
 }
 
@@ -211,9 +237,17 @@ function msg(s,ms=3200){
  msg.t=setTimeout(()=>e.style.display='none',ms);
 }
 
-function open(id){document.getElementById(id).style.display='flex';}
-function close(id){document.getElementById(id).style.display='none';}
-function back(e,id){if(e.target.id===id)close(id);}
+function open(id){
+ document.getElementById(id).style.display='flex';
+}
+
+function close(id){
+ document.getElementById(id).style.display='none';
+}
+
+function back(e,id){
+ if(e.target.id===id)close(id);
+}
 
 function saveMeta(){
  try{
@@ -231,40 +265,53 @@ function fmt(p){
 
 function choose(ll,show=true){
  selected={lng:ll.lng,lat:ll.lat};
+
  document.getElementById('coords').textContent='الموقع: '+fmt(selected);
  document.getElementById('placeText').textContent='الإحداثيات: '+fmt(selected);
+
  if(show)open('menuSheet');
 }
 
 function menu(){
- if(root){
-  msg('احفظ المبنى أو ألغِ التعديل أولاً');
+ if(root&&editing){
+  msg('احفظ التعديل أو ألغِه أولاً');
   return;
  }
+
  if(!selected){
   msg('اضغط على الخريطة لتحديد الموقع أولاً');
   return;
  }
+
  open('menuSheet');
 }
 
 function world(){
- map.flyTo({center:[0,18],zoom:1.55,pitch:0,bearing:0});
+ map.flyTo({
+  center:[0,18],
+  zoom:1.55,
+  pitch:0,
+  bearing:0
+ });
 }
 
 function tilt(){
- map.easeTo({pitch:map.getPitch()>20?0:55});
+ map.easeTo({
+  pitch:map.getPitch()>20?0:55
+ });
 }
 
 function uploadOpen(){
- if(root){
+ if(root&&editing){
   msg('أنهِ تعديل المبنى الحالي بالحفظ أو الإلغاء أولاً');
   return;
  }
+
  if(!selected){
   msg('حدد موقعاً على الخريطة أولاً');
   return;
  }
+
  close('menuSheet');
  open('uploadSheet');
 }
@@ -272,11 +319,13 @@ function uploadOpen(){
 function dbOpen(){
  return new Promise((res,rej)=>{
   const r=indexedDB.open(DB,1);
+
   r.onupgradeneeded=()=>{
    if(!r.result.objectStoreNames.contains('files')){
     r.result.createObjectStore('files',{keyPath:'id'});
    }
   };
+
   r.onsuccess=()=>res(r.result);
   r.onerror=()=>rej(r.error||new Error('تعذر فتح قاعدة الملفات'));
  });
@@ -284,18 +333,22 @@ function dbOpen(){
 
 async function storeFile(id,blob){
  const d=await dbOpen();
+
  return new Promise((res,rej)=>{
   const t=d.transaction('files','readwrite');
   t.objectStore('files').put({id,blob});
+
   t.oncomplete=()=>{
    d.close();
    res();
   };
+
   t.onerror=()=>{
    const e=t.error;
    d.close();
    rej(e||new Error('فشل تخزين الملف'));
   };
+
   t.onabort=()=>{
    const e=t.error;
    d.close();
@@ -306,14 +359,17 @@ async function storeFile(id,blob){
 
 async function readFile(id){
  const d=await dbOpen();
+
  return new Promise((res,rej)=>{
   const t=d.transaction('files','readonly');
   const r=t.objectStore('files').get(id);
+
   r.onsuccess=()=>{
    const value=r.result?.blob;
    d.close();
    res(value);
   };
+
   r.onerror=()=>{
    const e=r.error;
    d.close();
@@ -324,13 +380,16 @@ async function readFile(id){
 
 async function deleteStoredFile(id){
  const d=await dbOpen();
+
  return new Promise((res,rej)=>{
   const t=d.transaction('files','readwrite');
   t.objectStore('files').delete(id);
+
   t.oncomplete=()=>{
    d.close();
    res();
   };
+
   t.onerror=()=>{
    const e=t.error;
    d.close();
@@ -369,7 +428,9 @@ function init3d(){
     context:gl,
     antialias:true
    });
+
    renderer.autoClear=false;
+
    if('outputEncoding'in renderer&&THREE.sRGBEncoding){
     renderer.outputEncoding=THREE.sRGBEncoding;
    }
@@ -388,8 +449,8 @@ function init3d(){
 
    const modelMatrix=new THREE.Matrix4()
     .makeTranslation(mc.x,mc.y,mc.z)
-    .scale(new THREE.Vector3(meter,-meter,meter))
-    .multiply(new THREE.Matrix4().makeRotationX(Math.PI/2));
+    .multiply(new THREE.Matrix4().makeRotationX(Math.PI/2))
+    .multiply(new THREE.Matrix4().makeScale(meter,-meter,meter));
 
    camera.projectionMatrix.copy(projection).multiply(modelMatrix);
    camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
@@ -400,10 +461,14 @@ function init3d(){
  };
 
  if(map.isStyleLoaded()){
-  if(!map.getLayer(modelLayer.id))map.addLayer(modelLayer);
+  if(!map.getLayer(modelLayer.id)){
+   map.addLayer(modelLayer);
+  }
  }else{
   map.once('load',()=>{
-   if(!map.getLayer(modelLayer.id))map.addLayer(modelLayer);
+   if(!map.getLayer(modelLayer.id)){
+    map.addLayer(modelLayer);
+   }
   });
  }
 }
@@ -414,6 +479,7 @@ function requestRender(){
 
 function fit(obj){
  const bounds=new THREE.Box3().setFromObject(obj);
+
  if(bounds.isEmpty())return;
 
  const center=bounds.getCenter(new THREE.Vector3());
@@ -432,7 +498,7 @@ function setMode(next){
 
  document.getElementById('toolbarHint').textContent=
   mode==='move'
-   ?'اسحب قرب مركز المبنى لتحريك موقعه'
+   ?'اضغط على أي مكان بالخريطة لنقل المبنى إليه، أو اسحبه'
    :'اسحب يميناً أو يساراً لتدوير المبنى';
 }
 
@@ -465,12 +531,14 @@ function scaling(v){
 
 function turn(n){
  if(!root)return;
+
  root.rotation.y+=n*Math.PI/180;
  requestRender();
 }
 
 function scaleBy(n){
  if(!root)return;
+
  const next=Math.max(.1,Math.min(10,root.scale.x+n));
  root.scale.setScalar(next);
  requestRender();
@@ -478,6 +546,7 @@ function scaleBy(n){
 
 function captureState(){
  if(!root||!anchor)return null;
+
  return{
   position:{...anchor},
   rotation:root.rotation.y,
@@ -488,10 +557,12 @@ function captureState(){
 
 function restoreState(s){
  if(!s||!root)return;
+
  anchor={...s.position};
  root.rotation.y=s.rotation;
  root.scale.setScalar(s.scale);
  elevationMeters=s.elevation;
+
  requestRender();
 }
 
@@ -545,8 +616,8 @@ async function loadModel(){
  const btn=document.getElementById('uploadBtn');
  btn.disabled=true;
  btn.textContent='جاري التحميل...';
- document.getElementById('uploadSheet').classList.add('busy');
 
+ document.getElementById('uploadSheet').classList.add('busy');
  msg('جاري قراءة ملف النموذج...',12000);
 
  try{
@@ -584,7 +655,9 @@ async function loadModel(){
    throw new Error('تمت قراءة النموذج لكن تعذر حفظ نسخة محلية منه: '+(storageError.message||'مساحة التخزين'));
   }
 
-  if(root&&modelGroup)modelGroup.remove(root);
+  if(root&&modelGroup){
+   modelGroup.remove(root);
+  }
 
   root=newRoot;
   modelGroup.add(root);
@@ -592,6 +665,7 @@ async function loadModel(){
   anchor={...selected};
   blobId=newId;
   isExistingModel=false;
+  editing=true;
 
   modelName=document.getElementById('name').value.trim()||
    f.name.replace(/\.glb$/i,'');
@@ -660,25 +734,31 @@ function saveDraft(){
 
  originalState=null;
  isExistingModel=true;
+ editing=false;
+
  hideToolbar();
-
- root=null;
- anchor=null;
- blobId=null;
- modelName='';
-
  requestRender();
 
- msg('تم حفظ المبنى محلياً على هذا الجهاز');
+ msg('تم حفظ المبنى وبقي ظاهراً على الخريطة بهذا الجهاز');
 }
 
 function cancelModel(){
  if(!root)return;
 
- const id=blobId;
- const wasSaved=isExistingModel;
+ if(isExistingModel&&originalState){
+  restoreState(originalState);
+  editing=false;
+  hideToolbar();
 
- if(modelGroup)modelGroup.remove(root);
+  msg('تم إلغاء التعديلات وإرجاع المبنى إلى آخر نسخة محفوظة');
+  return;
+ }
+
+ const id=blobId;
+
+ if(modelGroup){
+  modelGroup.remove(root);
+ }
 
  root=null;
  anchor=null;
@@ -687,17 +767,16 @@ function cancelModel(){
  originalState=null;
  elevationMeters=0;
  isExistingModel=false;
+ editing=false;
 
  hideToolbar();
  requestRender();
 
- if(id&&!wasSaved){
+ if(id){
   deleteStoredFile(id).catch(e=>console.warn('temporary model cleanup:',e));
  }
 
- msg(wasSaved
-  ?'تم إغلاق التعديل، والنسخة المحفوظة ما زالت موجودة'
-  :'تم إلغاء النموذج');
+ msg('تم إلغاء النموذج');
 }
 
 function labelOpen(){
@@ -729,6 +808,7 @@ function favorite(){
  if(!selected)return;
 
  const n=prompt('اسم الموقع','موقع محفوظ');
+
  if(n===null)return;
 
  items.push({
@@ -791,11 +871,13 @@ function savedOpen(){
 
 async function focusItem(id){
  const x=items.find(a=>a.id===id);
+
  if(!x)return;
 
  close('savedSheet');
 
  selected={lng:x.lng,lat:x.lat};
+
  document.getElementById('coords').textContent='الموقع: '+fmt(selected);
 
  map.flyTo({
@@ -819,7 +901,9 @@ async function focusItem(id){
 
   const gltf=await parseGLB(buffer);
 
-  if(root&&modelGroup)modelGroup.remove(root);
+  if(root&&modelGroup){
+   modelGroup.remove(root);
+  }
 
   root=gltf.scene;
   fit(root);
@@ -828,6 +912,7 @@ async function focusItem(id){
   anchor={lng:x.lng,lat:x.lat};
   blobId=x.fileId;
   isExistingModel=true;
+  editing=true;
   modelName=x.name;
 
   root.scale.setScalar(Number(x.scale)||1);
@@ -865,7 +950,9 @@ async function deleteItem(id){
   }
  }
 
- if(blobId===x.fileId)cancelModel();
+ if(blobId===x.fileId){
+  cancelModel();
+ }
 
  savedOpen();
 }
@@ -893,7 +980,8 @@ function canvasPoint(e){
 const mapCanvas=map.getCanvas();
 
 mapCanvas.addEventListener('pointerdown',e=>{
- if(!root||!anchor)return;
+ if(!root||!anchor||!editing)return;
+
  if(e.pointerType==='mouse'&&e.button!==0)return;
 
  const p=canvasPoint(e);
@@ -961,10 +1049,23 @@ mapCanvas.addEventListener('click',e=>{
   return;
  }
 
- if(!root){
-  const ll=map.unproject(canvasPoint(e));
-  choose(ll,false);
+ const ll=map.unproject(canvasPoint(e));
+
+ if(root&&editing){
+  if(mode==='move'){
+   anchor={lng:ll.lng,lat:ll.lat};
+   selected={...anchor};
+
+   document.getElementById('coords').textContent='الموقع: '+fmt(anchor);
+
+   requestRender();
+   msg('تم نقل المبنى إلى الموقع الجديد');
+  }
+
+  return;
  }
+
+ choose(ll,false);
 });
 
 window.addEventListener('error',e=>{
